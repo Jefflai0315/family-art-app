@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { MongoClient } from "mongodb";
+import { MongoClient, Db } from "mongodb";
 import cloudinary from "cloudinary";
 import { config } from "@/lib/config";
+import { GoogleGenAI } from "@google/genai";
 
 // Configure Cloudinary
 cloudinary.v2.config({
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
 
 async function generateQueueNumber(
   client: MongoClient,
-  db: any
+  db: Db
 ): Promise<string> {
   try {
     // Get the latest queue number from database and increment
@@ -158,28 +159,97 @@ async function generateOutlineWithGemini(
   apiKey: string
 ): Promise<string | null> {
   try {
-    // This is a placeholder for the actual Gemini API call
-    // You'll need to implement the actual Gemini API integration here
-    // For now, returning a placeholder outline URL
+    // Initialize Google GenAI with the official SDK
+    const ai = new GoogleGenAI({
+      apiKey,
+    });
 
-    // TODO: Implement actual Gemini API call
-    // const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${apiKey}`, {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({
-    //     contents: [{
-    //       parts: [
-    //         { text: "Generate a simple outline drawing from this family photo, suitable for coloring" },
-    //         { inline_data: { mime_type: "image/jpeg", data: photoData.split(',')[1] } }
-    //       ]
-    //     }]
-    //   })
-    // });
+    const config = {
+      responseModalities: ["IMAGE", "TEXT"],
+    };
 
-    // Placeholder: Return a sample outline URL
-    return "https://res.cloudinary.com/drb3jrfq1/image/upload/v1756358078/family-art-app/generated-outlines/cmwxuqxfj68yz10g0v4q.png";
+    const model = "gemini-2.5-flash-image-preview";
+    const contents = [
+      {
+        role: "user",
+        parts: [
+          {
+            text: "Generate a simple outline drawing from this family photo, suitable for coloring. Make it clean with clear lines and good contrast for easy tracing.",
+          },
+          {
+            inlineData: {
+              mimeType: "image/jpeg",
+              data: photoData.split(",")[1], // Remove data:image/jpeg;base64, prefix
+            },
+          },
+        ],
+      },
+    ];
+
+    console.log("Generating outline with Gemini using model:", model);
+
+    // Generate content with streaming response
+    const response = await ai.models.generateContentStream({
+      model,
+      config,
+      contents,
+    });
+
+    let generatedImage: string | null = null;
+    let generatedText: string = "";
+
+    // Process the streaming response
+    for await (const chunk of response) {
+      if (
+        !chunk.candidates ||
+        !chunk.candidates[0].content ||
+        !chunk.candidates[0].content.parts
+      ) {
+        continue;
+      }
+
+      const part = chunk.candidates[0].content.parts[0];
+
+      if (part.inlineData) {
+        // Extract image data
+        const inlineData = part.inlineData;
+        const mimeType = inlineData.mimeType || "image/png";
+        const base64Data = inlineData.data || "";
+
+        if (base64Data) {
+          generatedImage = `data:${mimeType};base64,${base64Data}`;
+          console.log("Gemini generated outline successfully");
+        }
+      } else if (part.text) {
+        // Extract any text response
+        generatedText += part.text;
+      }
+    }
+
+    if (generatedImage) {
+      return generatedImage;
+    } else {
+      console.log("Gemini did not generate an outline image");
+      console.log("Text response:", generatedText);
+      return null;
+    }
   } catch (error) {
     console.error("Error calling Gemini API:", error);
+
+    // Log more details about the error
+    if (error && typeof error === "object" && "error" in error) {
+      const apiError = error.error as {
+        code?: string;
+        message?: string;
+        status?: string;
+      };
+      console.error("API Error details:", {
+        code: apiError.code,
+        message: apiError.message,
+        status: apiError.status,
+      });
+    }
+
     return null;
   }
 }

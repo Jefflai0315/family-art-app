@@ -52,10 +52,6 @@ export default function Home() {
             </div>
           </Link>
         </div>
-
-        <div className="text-sm text-gray-500">
-          <p>Choose your adventure and start creating!</p>
-        </div>
       </div>
     </div>
   );

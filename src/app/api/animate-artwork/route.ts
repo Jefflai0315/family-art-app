@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { MongoClient } from "mongodb";
 import cloudinary from "cloudinary";
 import { videoPrompts } from "@/app/utils/constants";
-import { config } from "@/lib/config";
+import { config } from "../../../lib/config";
 
 // Environment variables and client will be created when the function is called
 

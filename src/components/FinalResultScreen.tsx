@@ -12,6 +12,44 @@ const FinalResultScreen = ({
   onRestart,
   animationUrl,
 }: FinalResultScreenProps) => {
+  const downloadVideo = async (url: string, filename: string) => {
+    try {
+      // If it's a data URL, download directly
+      if (url.startsWith("data:")) {
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return;
+      }
+
+      // If it's an external URL, fetch and download as blob
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch video: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up the blob URL
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Error downloading video:", error);
+      // Fallback: open in new tab
+      window.open(url, "_blank");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
@@ -22,7 +60,7 @@ const FinalResultScreen = ({
           <h2 className="text-3xl font-bold text-gray-800 mb-2">
             Your Masterpiece!
           </h2>
-          <p className="text-gray-600">Watch your family art come alive</p>
+          <p className="text-gray-600">Watch your art come alive</p>
         </div>
 
         {/* Animation preview */}
@@ -64,7 +102,7 @@ const FinalResultScreen = ({
               if (animationUrl && navigator.share) {
                 navigator.share({
                   title: "My Animated Family Artwork",
-                  text: "Check out my animated family portrait!",
+                  text: "Check out my animated art at BazGym!",
                   url: animationUrl,
                 });
               } else if (animationUrl) {
@@ -82,12 +120,7 @@ const FinalResultScreen = ({
           <button
             onClick={() => {
               if (animationUrl) {
-                const link = document.createElement("a");
-                link.href = animationUrl;
-                link.download = "animated-family-artwork.mp4";
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                downloadVideo(animationUrl, "animated-family-artwork.mp4");
               }
             }}
             disabled={!animationUrl}
@@ -98,7 +131,7 @@ const FinalResultScreen = ({
           </button>
         </div>
 
-        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-4 mb-6">
+        {/* <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-4 mb-6">
           <p className="text-yellow-800 text-sm font-medium mb-1">
             🎯 Try AR Experience!
           </p>
@@ -106,7 +139,7 @@ const FinalResultScreen = ({
             Point your phone at the printed AR marker to see your art in 3D
             space!
           </p>
-        </div>
+        </div> */}
 
         <button
           onClick={onRestart}

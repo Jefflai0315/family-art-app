@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { Upload, ArrowLeft, Crop } from "lucide-react";
+import { Upload, ArrowLeft, Crop, RotateCcw, RotateCw } from "lucide-react";
 import ReactCrop, { Crop as CropType, PixelCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 
@@ -12,6 +12,7 @@ interface CaptureScreenProps {
 
 const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [rotation, setRotation] = useState(0);
   const [crop, setCrop] = useState<CropType>({
     unit: "%",
     width: 80,
@@ -31,6 +32,7 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         setUploadedImage(e.target?.result as string);
+        setRotation(0); // Reset rotation for new image
         // Reset crop to center of image
         setCrop({
           unit: "%",
@@ -42,6 +44,14 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleRotateLeft = () => {
+    setRotation((prev) => (prev - 90) % 360);
+  };
+
+  const handleRotateRight = () => {
+    setRotation((prev) => (prev + 90) % 360);
   };
 
   const handleCrop = () => {
@@ -94,16 +104,14 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col">
+    <div className="min-h-[100dvh] bg-gray-900 flex flex-col">
       <div className="flex-1 relative overflow-hidden items-center justify-center h-full">
         {!uploadedImage ? (
           // Upload interface
           <div className="absolute inset-0 flex items-center justify-center h-full w-full">
             <div className="text-center text-white p-8">
               <Upload className="w-24 h-24 mx-auto mb-6 text-gray-400" />
-              <h2 className="text-2xl font-bold mb-4">
-                Upload Your Family Photo
-              </h2>
+
               <p className="text-lg opacity-90 mb-6">
                 Choose a photo from your gallery
               </p>
@@ -135,13 +143,13 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
                     onClick={handleResetCrop}
                     className="bg-gray-600 text-white px-6 py-3 rounded-full hover:bg-gray-500 transition-colors"
                   >
-                    ↺ Reset & Crop Again
+                    ↺ Crop Again
                   </button>
                   <button
                     onClick={handleConfirmCrop}
                     className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-full hover:scale-105 transition-transform"
                   >
-                    ✓ Confirm & Continue
+                    ✓ Continue
                   </button>
                 </div>
               </div>
@@ -151,6 +159,24 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
           // Crop interface
           <div className="absolute inset-0 flex items-center justify-center p-4 h-full w-full">
             <div className="relative w-full h-full max-w-4xl max-h-[80vh] flex items-center justify-center mt-20">
+              {/* Rotation controls */}
+              <div className="absolute bottom-10 right-4 z-10 flex gap-2">
+                <button
+                  onClick={handleRotateLeft}
+                  className="bg-black bg-opacity-70 text-white p-3 rounded-full hover:bg-opacity-90 transition-all hover:scale-110"
+                  title="Rotate Left"
+                >
+                  <RotateCcw className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleRotateRight}
+                  className="bg-black bg-opacity-70 text-white p-3 rounded-full hover:bg-opacity-90 transition-all hover:scale-110"
+                  title="Rotate Right"
+                >
+                  <RotateCw className="w-5 h-5" />
+                </button>
+              </div>
+
               <ReactCrop
                 crop={crop}
                 onChange={(c) => setCrop(c)}
@@ -178,7 +204,11 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
                   src={uploadedImage}
                   alt="Uploaded photo"
                   className="max-w-full max-h-full object-contain"
-                  style={{ maxHeight: "70vh" }}
+                  style={{
+                    maxHeight: "70vh",
+                    transform: `rotate(${rotation}deg)`,
+                    transition: "transform 0.3s ease-in-out",
+                  }}
                 />
               </ReactCrop>
             </div>
@@ -201,7 +231,7 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
               ? "Choose a photo from your gallery to get started"
               : showPreview
               ? "Review your cropped photo and confirm or go back to adjust"
-              : "Drag the image and resize the crop area to frame your family perfectly"}
+              : "Resize the crop area."}
           </p>
         </div>
       </div>
@@ -236,6 +266,7 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
               <button
                 onClick={() => {
                   setUploadedImage(null);
+                  setRotation(0);
                   setCrop({
                     unit: "%",
                     width: 80,
