@@ -70,6 +70,40 @@ const OutlinePreviewScreen: React.FC<OutlinePreviewScreenProps> = ({
           </div>
         </div>
 
+        {/* Next Steps Instructions */}
+        <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-2xl p-6 border-2 border-green-200 mb-8">
+          <h3 className="text-xl font-semibold text-green-800 mb-3 text-center">
+            🎯 Next Steps
+          </h3>
+          <div className="grid md:grid-cols-3 gap-4 text-center">
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-lg mb-2">
+                1
+              </div>
+              <p className="text-green-700 font-medium">Print & Color</p>
+              <p className="text-green-600 text-sm">
+                Print your outline and color it in
+              </p>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mb-2">
+                2
+              </div>
+              <p className="text-blue-700 font-medium">Take Photo</p>
+              <p className="text-blue-600 text-sm">
+                Take a photo of your finished artwork
+              </p>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg mb-2">
+                3
+              </div>
+              <p className="text-purple-700 font-medium">Get Animation</p>
+              <p className="text-purple-600 text-sm">Submit for AI animation</p>
+            </div>
+          </div>
+        </div>
+
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
@@ -90,7 +124,7 @@ const OutlinePreviewScreen: React.FC<OutlinePreviewScreenProps> = ({
             onClick={onProceed}
             className="px-8 py-3 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 transition-colors duration-200 flex items-center justify-center gap-2"
           >
-            ✅ Looks Good! Continue →
+            🎬 Get Animation →
           </button>
         </div>
       </div>

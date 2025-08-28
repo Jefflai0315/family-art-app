@@ -1,68 +1,33 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { Camera, Upload, ArrowLeft, Check } from "lucide-react";
+import React, { useState } from "react";
+import { Upload, ArrowLeft, Check, Loader2 } from "lucide-react";
 import ReactCrop, { Crop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 
 interface ArtworkScanScreenProps {
   onArtworkScanned: (artworkData: string) => void;
   onBack: () => void;
+  queueNumber?: string;
 }
 
 const ArtworkScanScreen = ({
   onArtworkScanned,
   onBack,
+  queueNumber,
 }: ArtworkScanScreenProps) => {
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [crop, setCrop] = useState<Crop>({
     unit: "%",
-    width: 80,
-    height: 80,
-    x: 10,
-    y: 10,
+    width: 70,
+    height: 70,
+    x: 15,
+    y: 15,
   });
   const [isCropping, setIsCropping] = useState(false);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    } catch (error) {
-      console.error("Error accessing camera:", error);
-    }
-  };
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-  };
-
-  const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const context = canvasRef.current.getContext("2d");
-      if (context) {
-        canvasRef.current.width = videoRef.current.videoWidth;
-        canvasRef.current.height = videoRef.current.videoHeight;
-        context.drawImage(videoRef.current, 0, 0);
-        const imageData = canvasRef.current.toDataURL("image/jpeg");
-        setCapturedImage(imageData);
-        stopCamera();
-      }
-    }
-  };
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -70,10 +35,23 @@ const ArtworkScanScreen = ({
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
-        setCapturedImage(result);
+        setUploadedImage(result);
+        setIsCropping(true);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleImageLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = event.currentTarget;
+    // Reset crop to center of the image
+    setCrop({
+      unit: "%",
+      width: 70,
+      height: 70,
+      x: 15,
+      y: 15,
+    });
   };
 
   const getCroppedImg = (imageSrc: string, crop: Crop): Promise<string> => {
@@ -89,8 +67,18 @@ const ArtworkScanScreen = ({
           return;
         }
 
-        const scaleX = image.naturalWidth / image.width;
-        const scaleY = image.naturalHeight / image.height;
+        // Get the actual displayed image element to calculate proper scaling
+        const imgElement = document.querySelector(
+          'img[src="' + imageSrc + '"]'
+        ) as HTMLImageElement;
+        if (!imgElement) {
+          resolve(imageSrc);
+          return;
+        }
+
+        // Calculate the actual scaling factors based on displayed vs natural dimensions
+        const scaleX = image.naturalWidth / imgElement.offsetWidth;
+        const scaleY = image.naturalHeight / imgElement.offsetHeight;
 
         canvas.width = crop.width * scaleX;
         canvas.height = crop.height * scaleY;
@@ -113,10 +101,10 @@ const ArtworkScanScreen = ({
   };
 
   const handleCropComplete = async () => {
-    if (capturedImage && crop.width && crop.height) {
+    if (uploadedImage && crop.width && crop.height) {
       setIsProcessing(true);
       try {
-        const croppedImg = await getCroppedImg(capturedImage, crop);
+        const croppedImg = await getCroppedImg(uploadedImage, crop);
         setCroppedImage(croppedImg);
         setIsCropping(false);
       } catch (error) {
@@ -127,21 +115,65 @@ const ArtworkScanScreen = ({
     }
   };
 
-  const confirmCrop = () => {
-    if (croppedImage) {
-      onArtworkScanned(croppedImage);
+  const handleSubmitToWavespeed = async () => {
+    if (!croppedImage || !queueNumber) {
+      console.error("Missing cropped image or queue number");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Call the wavespeed API through our animate-artwork endpoint
+      const response = await fetch("/api/animate-artwork", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageUrl: croppedImage,
+          prompt:
+            "Bring this family artwork to life with gentle animation and flowing colors",
+          familyArtId: queueNumber, // Using queue number as the family art ID
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+
+        if (result.success) {
+          console.log("Animation submitted successfully:", result.taskId);
+          // Pass the animation result to the parent component
+          // The API returns the final animation URL after polling is complete
+          onArtworkScanned(
+            result.cloudinaryVideoUrl || result.downloadUrl || croppedImage
+          );
+        } else {
+          console.error("Animation submission failed:", result.error);
+          alert("Failed to submit artwork for animation. Please try again.");
+        }
+      } else {
+        console.error("Animation API request failed:", response.status);
+        alert("Failed to submit artwork for animation. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error submitting to wavespeed:", error);
+      alert(
+        "An error occurred while submitting your artwork. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const retakePhoto = () => {
-    setCapturedImage(null);
+    setUploadedImage(null);
     setCroppedImage(null);
     setCrop({
       unit: "%",
-      width: 80,
-      height: 80,
-      x: 10,
-      y: 10,
+      width: 70,
+      height: 70,
+      x: 15,
+      y: 15,
     });
     setIsCropping(false);
   };
@@ -160,6 +192,12 @@ const ArtworkScanScreen = ({
             <p className="text-gray-600 mb-6">
               Your finished artwork is ready for animation
             </p>
+            {queueNumber && (
+              <p className="text-sm text-gray-500 mb-4">
+                Queue Number:{" "}
+                <span className="font-semibold">{queueNumber}</span>
+              </p>
+            )}
           </div>
 
           {/* Cropped artwork preview */}
@@ -173,17 +211,28 @@ const ArtworkScanScreen = ({
 
           <div className="space-y-4">
             <button
-              onClick={confirmCrop}
-              className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-4 rounded-2xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+              onClick={handleSubmitToWavespeed}
+              disabled={isSubmitting}
+              className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-4 rounded-2xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
-              Continue to Animation
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Creating Animation...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-5 h-5" />
+                  <span>Submit for Animation</span>
+                </>
+              )}
             </button>
 
             <button
               onClick={retakePhoto}
               className="w-full bg-gray-200 text-gray-700 py-3 rounded-2xl font-semibold hover:bg-gray-300 transition-all duration-200"
             >
-              Retake Photo
+              Upload Different Image
             </button>
           </div>
         </div>
@@ -191,7 +240,7 @@ const ArtworkScanScreen = ({
     );
   }
 
-  if (isCropping && capturedImage) {
+  if (isCropping && uploadedImage) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
@@ -205,19 +254,43 @@ const ArtworkScanScreen = ({
           </div>
 
           <div className="mb-6">
-            <ReactCrop
-              crop={crop}
-              onChange={(c) => setCrop(c)}
-              aspect={1}
-              minWidth={100}
-              minHeight={100}
-            >
-              <img
-                src={capturedImage}
-                alt="Captured artwork"
-                className="w-full h-auto max-h-80 object-contain"
-              />
-            </ReactCrop>
+            <div className="bg-gray-100 rounded-xl p-4">
+              <ReactCrop
+                crop={crop}
+                onChange={(c) => setCrop(c)}
+                aspect={4 / 3}
+                minWidth={100}
+                minHeight={100}
+                keepSelection
+                ruleOfThirds
+              >
+                <img
+                  src={uploadedImage}
+                  alt="Uploaded artwork"
+                  className="w-full h-auto max-h-80 object-contain rounded-lg"
+                  style={{ maxWidth: "100%", height: "auto" }}
+                  onLoad={handleImageLoad}
+                />
+              </ReactCrop>
+            </div>
+            <div className="mt-4 text-sm text-gray-600">
+              <p>
+                Drag the corners to adjust the crop area. The crop will be
+                landscape (4:3 ratio).
+              </p>
+              <div className="mt-2 p-2 bg-gray-200 rounded text-xs">
+                <p>
+                  Crop Area: {Math.round(crop.x)}%, {Math.round(crop.y)}% -{" "}
+                  {Math.round(crop.width)}% × {Math.round(crop.height)}%
+                </p>
+              </div>
+              <div className="mt-2 p-2 bg-blue-100 rounded text-xs text-blue-700">
+                <p>
+                  💡 Animation creation takes 2-5 minutes. You&apos;ll see your
+                  result when it&apos;s ready!
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -233,7 +306,7 @@ const ArtworkScanScreen = ({
               onClick={retakePhoto}
               className="w-full bg-gray-200 text-gray-700 py-3 rounded-2xl font-semibold hover:bg-gray-300 transition-all duration-200"
             >
-              Retake Photo
+              Upload Different Image
             </button>
           </div>
         </div>
@@ -246,26 +319,23 @@ const ArtworkScanScreen = ({
       <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
         <div className="mb-8">
           <div className="w-24 h-24 bg-gradient-to-r from-orange-500 to-red-500 rounded-full mx-auto mb-6 flex items-center justify-center">
-            <Camera className="w-12 h-12 text-white" />
+            <Upload className="w-12 h-12 text-white" />
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">
-            Scan Your Finished Artwork
+            Upload Your Finished Artwork
           </h2>
           <p className="text-gray-600 mb-6">
-            Take a photo or upload your completed coloring artwork to bring it
-            to life with animation!
+            Upload your completed coloring artwork to bring it to life with
+            animation!
           </p>
+          {queueNumber && (
+            <p className="text-sm text-gray-500 mb-4">
+              Queue Number: <span className="font-semibold">{queueNumber}</span>
+            </p>
+          )}
         </div>
 
         <div className="space-y-4 mb-8">
-          <button
-            onClick={startCamera}
-            className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-4 rounded-2xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2"
-          >
-            <Camera className="w-5 h-5" />
-            <span>Take Photo</span>
-          </button>
-
           <div className="relative">
             <input
               type="file"
@@ -279,25 +349,6 @@ const ArtworkScanScreen = ({
             </button>
           </div>
         </div>
-
-        {/* Camera view */}
-        {streamRef.current && (
-          <div className="mb-6">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              className="w-full h-auto rounded-2xl mb-4"
-            />
-            <canvas ref={canvasRef} style={{ display: "none" }} />
-            <button
-              onClick={capturePhoto}
-              className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-4 rounded-2xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
-            >
-              Capture Photo
-            </button>
-          </div>
-        )}
 
         <button
           onClick={onBack}

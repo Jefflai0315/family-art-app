@@ -6,13 +6,15 @@ import { Hash, ArrowRight, ArrowLeft } from "lucide-react";
 interface QueueNumberInputScreenProps {
   onQueueNumberSubmit: (queueNumber: string) => void;
   onBack: () => void;
+  initialQueueNumber?: string;
 }
 
 const QueueNumberInputScreen = ({
   onQueueNumberSubmit,
   onBack,
+  initialQueueNumber,
 }: QueueNumberInputScreenProps) => {
-  const [queueNumber, setQueueNumber] = useState("");
+  const [queueNumber, setQueueNumber] = useState(initialQueueNumber || "");
   const [error, setError] = useState("");
 
   const handleSubmit = () => {

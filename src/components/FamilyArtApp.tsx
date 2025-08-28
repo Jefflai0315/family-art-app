@@ -181,105 +181,37 @@ const FamilyArtApp = () => {
     }
   };
 
-  const handleArtworkScanned = (artwork: string) => {
-    setArtworkData(artwork);
-    setCurrentStep("artwork-scan");
-  };
-
-  const simulateEnhancement = async () => {
-    setProcessing(true);
-    setCurrentStep("enhancing");
-
-    const steps = [
-      { text: "Scanning your artwork...", delay: 1000 },
-      { text: "AI enhancing colors...", delay: 2500 },
-      { text: "Creating animation...", delay: 3000 },
-      { text: "Generating AR experience...", delay: 1500 },
-    ];
-
-    for (let i = 0; i < steps.length; i++) {
-      await new Promise((resolve) => setTimeout(resolve, steps[i].delay));
-      setProgress(((i + 1) / steps.length) * 100);
-    }
-
-    setProcessing(false);
-    setCurrentStep("final-result");
-  };
-
-  const processArtworkAnimation = async () => {
-    if (!artworkData || !familyData.id) {
-      console.error("Missing artwork data or family ID");
-      return;
-    }
-
+  const processArtworkAnimation = async (artworkData: string) => {
+    // Store the artwork data and proceed to the enhancing screen
+    setArtworkData(artworkData);
     setProcessing(true);
     setCurrentStep("enhancing");
 
     try {
-      // Call the animation API (if in real mode)
-      if (config.isReal()) {
-        const response = await fetch("/api/animate-artwork", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            imageUrl: artworkData,
-            prompt:
-              "Bring this family artwork to life with gentle animation and flowing colors",
-            familyArtId: familyData.id,
-          }),
-        });
+      // Simulate processing steps for the animation
+      const steps = [
+        { text: "Processing your artwork...", delay: 1000 },
+        { text: "AI analyzing colors...", delay: 2000 },
+        { text: "Creating animation...", delay: 3000 },
+        { text: "Finalizing...", delay: 1500 },
+      ];
 
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success) {
-            console.log("Animation created successfully:", result.taskId);
-            setFamilyData((prev) => ({
-              ...prev,
-              animation: result.cloudinaryVideoUrl || result.downloadUrl,
-            }));
-            setCurrentStep("final-result");
-            return; // Exit early on success
-          } else {
-            console.error("Animation failed:", result.error);
-            setCurrentStep("animation-failed");
-            return; // Exit early on failure
-          }
-        } else {
-          console.error("Animation API request failed:", response.status);
-          setCurrentStep("animation-failed");
-          return; // Exit early on failure
-        }
+      for (let i = 0; i < steps.length; i++) {
+        await new Promise((resolve) => setTimeout(resolve, steps[i].delay));
+        setProgress(((i + 1) / steps.length) * 100);
       }
 
-      // Placeholder: Simulate animation processing (if in simulated mode or API failed)
-      if (config.isSimulated()) {
-        console.log("Using placeholder animation (simulated mode)");
+      // Set placeholder animation URL for now
+      // In a real implementation, you might want to poll the animation status
+      setFamilyData((prev) => ({
+        ...prev,
+        artwork: artworkData,
+        animation:
+          "https://res.cloudinary.com/drb3jrfq1/video/upload/v1754711869/mural-app/ydcgrehf44vmyequiuxs.mp4g",
+      }));
 
-        // Simulate processing steps
-        const steps = [
-          { text: "Scanning your artwork...", delay: 1000 },
-          { text: "AI enhancing colors...", delay: 2500 },
-          { text: "Creating animation...", delay: 3000 },
-          { text: "Generating AR experience...", delay: 1500 },
-        ];
-
-        for (let i = 0; i < steps.length; i++) {
-          await new Promise((resolve) => setTimeout(resolve, steps[i].delay));
-          setProgress(((i + 1) / steps.length) * 100);
-        }
-
-        // Set placeholder animation URL
-        setFamilyData((prev) => ({
-          ...prev,
-          animation:
-            "https://via.placeholder.com/400x300/4F46E5/FFFFFF?text=Animated+Artwork+Video",
-        }));
-
-        setProcessing(false);
-        setCurrentStep("final-result");
-      }
+      setProcessing(false);
+      setCurrentStep("final-result");
     } catch (error) {
       console.error("Error processing animation:", error);
       setCurrentStep("animation-failed");
@@ -339,6 +271,7 @@ const FamilyArtApp = () => {
   const handleQueueNumberSubmit = (queueNumber: string) => {
     // TODO: In real implementation, validate queue number exists in database
     console.log("Queue number submitted:", queueNumber);
+    setFamilyData((prev) => ({ ...prev, queueNumber }));
     setCurrentStep("artwork-scan");
   };
 
@@ -420,6 +353,7 @@ const FamilyArtApp = () => {
           <ArtworkScanScreen
             onArtworkScanned={processArtworkAnimation}
             onBack={() => setCurrentStep("coloring-instructions")}
+            queueNumber={familyData.queueNumber || undefined}
           />
         );
       case "enhancing":
@@ -434,7 +368,7 @@ const FamilyArtApp = () => {
       case "animation-failed":
         return (
           <AnimationFailedScreen
-            onRetry={() => processArtworkAnimation()}
+            onRetry={() => setCurrentStep("artwork-scan")}
             onBack={() => setCurrentStep("artwork-scan")}
           />
         );

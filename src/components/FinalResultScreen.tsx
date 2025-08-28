@@ -59,11 +59,40 @@ const FinalResultScreen = ({
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <button className="bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-200">
+          <button
+            onClick={() => {
+              if (animationUrl && navigator.share) {
+                navigator.share({
+                  title: "My Animated Family Artwork",
+                  text: "Check out my animated family portrait!",
+                  url: animationUrl,
+                });
+              } else if (animationUrl) {
+                // Fallback: copy to clipboard
+                navigator.clipboard.writeText(animationUrl);
+                alert("Animation URL copied to clipboard!");
+              }
+            }}
+            disabled={!animationUrl}
+            className="bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Share2 className="w-5 h-5 inline mr-2" />
             Share
           </button>
-          <button className="bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-200">
+          <button
+            onClick={() => {
+              if (animationUrl) {
+                const link = document.createElement("a");
+                link.href = animationUrl;
+                link.download = "animated-family-artwork.mp4";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }
+            }}
+            disabled={!animationUrl}
+            className="bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Download className="w-5 h-5 inline mr-2" />
             Save
           </button>
