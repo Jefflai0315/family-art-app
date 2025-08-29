@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import QueueNumberInputScreen from "../../components/QueueNumberInputScreen";
 import ArtworkScanScreen from "../../components/ArtworkScanScreen";
@@ -15,7 +15,7 @@ interface AnimationData {
   animation: string | null;
 }
 
-const GetAnimPage = () => {
+function GetAnimPageContent() {
   const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState("queue-input");
   const [animationData, setAnimationData] = useState<AnimationData>({
@@ -115,6 +115,27 @@ const GetAnimPage = () => {
         {renderCurrentStep()}
       </div>
     </div>
+  );
+}
+
+function GetAnimPageFallback() {
+  return (
+    <div className="font-sans">
+      <div className="min-h-screen bg-gradient-to-br from-green-400 via-blue-400 to-purple-400 flex items-center justify-center">
+        <div className="text-center text-white">
+          <h1 className="text-2xl font-bold mb-4">Loading Animation Page...</h1>
+          <p>Please wait while we prepare the animation tools.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const GetAnimPage = () => {
+  return (
+    <Suspense fallback={<GetAnimPageFallback />}>
+      <GetAnimPageContent />
+    </Suspense>
   );
 };
 
