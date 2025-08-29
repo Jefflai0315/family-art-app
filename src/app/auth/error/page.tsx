@@ -1,10 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 
-export default function AuthError() {
+function AuthErrorContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
 
@@ -60,5 +61,38 @@ export default function AuthError() {
         </p>
       </div>
     </div>
+  );
+}
+
+function AuthErrorFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-red-500 via-orange-500 to-yellow-500 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
+        <div className="w-24 h-24 bg-red-100 rounded-full mx-auto mb-6 flex items-center justify-center">
+          <AlertTriangle className="w-12 h-12 text-red-600" />
+        </div>
+        <h1 className="text-2xl font-bold text-gray-800 mb-4">
+          Authentication Error
+        </h1>
+        <p className="text-gray-600 mb-6">Loading error details...</p>
+        <div className="space-y-4">
+          <Link
+            href="/"
+            className="w-full bg-gray-200 text-gray-700 px-6 py-3 rounded-2xl font-semibold hover:bg-gray-300 transition-colors flex items-center justify-center space-x-2"
+          >
+            <Home className="w-5 h-5" />
+            <span>Go Home</span>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function AuthError() {
+  return (
+    <Suspense fallback={<AuthErrorFallback />}>
+      <AuthErrorContent />
+    </Suspense>
   );
 }
