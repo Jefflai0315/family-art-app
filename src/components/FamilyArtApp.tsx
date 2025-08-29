@@ -46,11 +46,16 @@ const FamilyArtApp = () => {
     setCurrentStep("processing");
 
     try {
-      // Step 1: Analyze family photo
+      // Step 1: Ensure image is fully ready (add delay for image processing)
+      setProgress(10);
+      console.log("Waiting for image to be fully ready...");
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds for image processing
+
+      // Step 2: Analyze family photo
       setProgress(25);
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Step 2: Generate outline using Gemini API (if in real mode) or placeholder (if in simulated mode)
+      // Step 3: Generate outline using Gemini API (if in real mode) or placeholder (if in simulated mode)
       setProgress(50);
       let outlineGenerated = false;
 
@@ -58,80 +63,109 @@ const FamilyArtApp = () => {
         // Real API mode - try to generate outline with Gemini
         if (familyData.photo) {
           try {
-            // const response = await fetch("/api/generate-outline", {
-            //   method: "POST",
-            //   headers: {
-            //     "Content-Type": "application/json",
-            //   },
-            //   body: JSON.stringify({
-            //     photoData: familyData.photo,
-            //   }),
-            // });
+            // Add retry mechanism for better reliability
+            let retryCount = 0;
+            const maxRetries = 2;
 
-            // if (response.ok) {
+            while (retryCount < maxRetries && !outlineGenerated) {
+              try {
+                console.log(`Attempt ${retryCount + 1} to generate outline...`);
 
-            // const result = await response.json();
-            if (true) {
-              const result = {
-                success: true,
-                source: "gemini",
-                outlineUrl:
-                  "https://res.cloudinary.com/drb3jrfq1/image/upload/v1756358078/family-art-app/generated-outlines/cmwxuqxfj68yz10g0v4q.png",
-              };
-              if (result.success && result.outlineUrl) {
-                setFamilyData((prev) => ({
-                  ...prev,
-                  outline: result.outlineUrl,
-                }));
-                console.log("Outline generated successfully:", result.source);
-                outlineGenerated = true;
+                const response = await fetch("/api/generate-outline", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    photoData: familyData.photo,
+                  }),
+                });
 
-                // Save submission to MongoDB after successful generation
-                try {
-                  const saveResponse = await fetch("/api/save-submission", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                      originalPhoto: familyData.photo,
-                      generatedOutline: result.outlineUrl,
-                    }),
-                  });
-
-                  if (saveResponse.ok) {
-                    const saveResult = await saveResponse.json();
-                    console.log(
-                      "Submission saved successfully:",
-                      saveResult.submissionId
-                    );
-                    // Update family data with the saved URLs and queue number
+                if (response.ok) {
+                  const result = await response.json();
+                  if (result.success && result.outlineUrl) {
                     setFamilyData((prev) => ({
                       ...prev,
-                      id: saveResult.submissionId.toString(),
-                      queueNumber: saveResult.queueNumber,
+                      outline: result.outlineUrl,
                     }));
                     console.log(
-                      "Queue number assigned:",
-                      saveResult.queueNumber
+                      "Outline generated successfully:",
+                      result.source
                     );
+                    outlineGenerated = true;
+
+                    // Save submission to MongoDB after successful generation
+                    try {
+                      const saveResponse = await fetch("/api/save-submission", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                          originalPhoto: familyData.photo,
+                          generatedOutline: result.outlineUrl,
+                        }),
+                      });
+
+                      if (saveResponse.ok) {
+                        const saveResult = await saveResponse.json();
+                        console.log(
+                          "Submission saved successfully:",
+                          saveResult.submissionId
+                        );
+                        // Update family data with the saved URLs and queue number
+                        setFamilyData((prev) => ({
+                          ...prev,
+                          id: saveResult.submissionId.toString(),
+                          queueNumber: saveResult.queueNumber,
+                        }));
+                        console.log(
+                          "Queue number assigned:",
+                          saveResult.queueNumber
+                        );
+                      } else {
+                        console.error(
+                          "Failed to save submission:",
+                          saveResponse.status
+                        );
+                      }
+                    } catch (saveError) {
+                      console.error("Error saving submission:", saveError);
+                    }
                   } else {
-                    console.error(
-                      "Failed to save submission:",
-                      saveResponse.status
-                    );
+                    console.error("Failed to generate outline:", result.error);
                   }
-                } catch (saveError) {
-                  console.error("Error saving submission:", saveError);
+                } else {
+                  console.error("API request failed:", response.status);
                 }
-              } else {
-                // console.error("Failed to generate outline:", result.error);
+
+                if (!outlineGenerated && retryCount < maxRetries - 1) {
+                  console.log(
+                    `Retrying in 3 seconds... (attempt ${retryCount + 2})`
+                  );
+                  await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3 seconds before retry
+                }
+              } catch (apiError) {
+                console.error(
+                  `API call error on attempt ${retryCount + 1}:`,
+                  apiError
+                );
+                if (retryCount < maxRetries - 1) {
+                  console.log(
+                    `Retrying in 3 seconds... (attempt ${retryCount + 2})`
+                  );
+                  await new Promise((resolve) => setTimeout(resolve, 3000));
+                }
               }
-            } else {
-              // console.error("API request failed:", response.status);
+
+              retryCount++;
+            }
+
+            if (!outlineGenerated) {
+              console.error("All retry attempts failed");
             }
           } catch (apiError) {
-            console.error("API call error:", apiError);
+            console.error("Error calling Gemini API:", apiError);
           }
         }
       } else {
@@ -158,11 +192,11 @@ const FamilyArtApp = () => {
         }
       }
 
-      // Step 3: Optimize for printing
+      // Step 4: Optimize for printing
       setProgress(75);
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      // Step 4: Ready for coloring
+      // Step 5: Ready for coloring
       setProgress(100);
       await new Promise((resolve) => setTimeout(resolve, 500));
 

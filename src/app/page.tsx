@@ -9,11 +9,9 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full text-center">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            Playing With Pencil
-          </h1>
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">BazGym Art</h1>
           <p className="text-xl text-gray-600">
-            Transform your family photos into magical animated artwork
+            Transform your gymnastics poses intos into magical animated artwork
           </p>
         </div>
 
