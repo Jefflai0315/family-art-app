@@ -2,8 +2,8 @@
 export const config = {
   // Check if we're in simulated mode
   isSimulated(): boolean {
-    // const forceMode = process.env.FORCE_APP_MODE;
-    const forceMode = "real";
+    const forceMode = process.env.FORCE_APP_MODE;
+    // const forceMode = "real";
     if (forceMode === "simulated") return true;
     if (forceMode === "real") return false;
     return process.env.NODE_ENV !== "production";
