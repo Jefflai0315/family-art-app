@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
-import CaptureScreen from "../../components/CaptureScreen";
-import ProcessingScreen from "../../components/ProcessingScreen";
-import OutlinePreviewScreen from "../../components/OutlinePreviewScreen";
-import OutlineFailedScreen from "../../components/OutlineFailedScreen";
+import { useState } from "react";
+import CaptureScreen from "@/components/CaptureScreen";
+import ProcessingScreen from "@/components/ProcessingScreen";
+import OutlinePreviewScreen from "@/components/OutlinePreviewScreen";
+import OutlineFailedScreen from "@/components/OutlineFailedScreen";
+import QueueNumberInputScreen from "@/components/QueueNumberInputScreen";
 import { config } from "../../lib/config";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface OutlineData {
   id: string | null;
@@ -25,7 +27,22 @@ const GetOutlinePage = () => {
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  const handlePhotoCapture = (photoData: string) => {
+    setOutlineData((prev) => ({ ...prev, photo: photoData }));
+    setCurrentStep("queue-input"); // Go to queue input instead of processing directly
+  };
+
+  const handleQueueNumberSubmit = (queueNumber: string) => {
+    setOutlineData((prev) => ({ ...prev, queueNumber }));
+    processPhoto(); // Now process the photo with the queue number
+  };
+
   const processPhoto = async () => {
+    if (!outlineData.queueNumber) {
+      console.error("No queue number provided");
+      return;
+    }
+
     setProcessing(true);
     setCurrentStep("processing");
 
@@ -62,6 +79,7 @@ const GetOutlinePage = () => {
                   },
                   body: JSON.stringify({
                     photoData: outlineData.photo,
+                    queueNumber: outlineData.queueNumber,
                   }),
                 });
 
@@ -125,7 +143,7 @@ const GetOutlinePage = () => {
             ...prev,
             outline: outlineData.photo, // Use original photo as placeholder outline
             id: `mock_${Date.now()}`,
-            queueNumber: "12345", // Mock queue number
+            queueNumber: outlineData.queueNumber, // Use user-provided queue number
           }));
         }
       }
@@ -153,11 +171,6 @@ const GetOutlinePage = () => {
     }
   };
 
-  const handlePhotoCapture = (photoData: string) => {
-    setOutlineData((prev) => ({ ...prev, photo: photoData }));
-    processPhoto();
-  };
-
   const handleRegenerateOutline = () => {
     // Reset the outline and go back to processing
     setOutlineData((prev) => ({ ...prev, outline: null }));
@@ -182,6 +195,13 @@ const GetOutlinePage = () => {
           <CaptureScreen
             onPhotoCapture={handlePhotoCapture}
             onBack={() => (window.location.href = "/")}
+          />
+        );
+      case "queue-input":
+        return (
+          <QueueNumberInputScreen
+            onQueueNumberSubmit={handleQueueNumberSubmit}
+            onBack={() => setCurrentStep("capture")}
           />
         );
       case "processing":
@@ -218,11 +238,13 @@ const GetOutlinePage = () => {
   };
 
   return (
-    <div className="font-sans">
-      <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400">
-        {renderCurrentStep()}
+    <ProtectedRoute requireCredits={true} minCredits={1}>
+      <div className="font-sans">
+        <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400">
+          {renderCurrentStep()}
+        </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 };
 
