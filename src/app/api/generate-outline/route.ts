@@ -159,6 +159,18 @@ async function generateOutlineWithGemini(
   apiKey: string
 ): Promise<string | null> {
   try {
+    // Validate and clean the photo data
+    let cleanPhotoData = photoData;
+    if (photoData.includes(",")) {
+      cleanPhotoData = photoData.split(",")[1]; // Remove data:image/jpeg;base64, prefix
+    }
+
+    // Validate base64 data
+    if (!cleanPhotoData || cleanPhotoData.length < 100) {
+      console.error("Invalid or too small photo data");
+      return null;
+    }
+
     // Initialize Google GenAI with the official SDK
     const ai = new GoogleGenAI({
       apiKey,
@@ -174,12 +186,12 @@ async function generateOutlineWithGemini(
         role: "user",
         parts: [
           {
-            text: "Generate a simple outline drawing from this family photo, suitable for coloring. Make it clean with clear lines and good contrast for easy tracing.",
+            text: "Generate a simple outline drawing from this family photo, suitable for coloring. Make it clean with clear lines and good contrast for easy tracing. Focus on the main subjects and create a coloring book style outline.",
           },
           {
             inlineData: {
               mimeType: "image/jpeg",
-              data: photoData.split(",")[1], // Remove data:image/jpeg;base64, prefix
+              data: cleanPhotoData,
             },
           },
         ],
@@ -187,13 +199,21 @@ async function generateOutlineWithGemini(
     ];
 
     console.log("Generating outline with Gemini using model:", model);
+    console.log("Photo data length:", cleanPhotoData.length);
 
-    // Generate content with streaming response
-    const response = await ai.models.generateContentStream({
+    // Add timeout and retry logic
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("Gemini API timeout")), 60000); // 60 second timeout
+    });
+
+    const generatePromise = ai.models.generateContentStream({
       model,
       config,
       contents,
     });
+
+    // Race between generation and timeout
+    const response = await Promise.race([generatePromise, timeoutPromise]);
 
     let generatedImage: string | null = null;
     let generatedText: string = "";
@@ -216,9 +236,10 @@ async function generateOutlineWithGemini(
         const mimeType = inlineData.mimeType || "image/png";
         const base64Data = inlineData.data || "";
 
-        if (base64Data) {
+        if (base64Data && base64Data.length > 100) {
           generatedImage = `data:${mimeType};base64,${base64Data}`;
           console.log("Gemini generated outline successfully");
+          console.log("Generated image size:", base64Data.length);
         }
       } else if (part.text) {
         // Extract any text response
@@ -248,6 +269,17 @@ async function generateOutlineWithGemini(
         message: apiError.message,
         status: apiError.status,
       });
+    }
+
+    // Check for specific error types
+    if (error instanceof Error) {
+      if (error.message.includes("timeout")) {
+        console.error("Gemini API request timed out");
+      } else if (error.message.includes("quota")) {
+        console.error("Gemini API quota exceeded");
+      } else if (error.message.includes("invalid")) {
+        console.error("Invalid request to Gemini API");
+      }
     }
 
     return null;

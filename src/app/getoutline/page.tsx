@@ -47,14 +47,14 @@ const GetOutlinePage = () => {
     setCurrentStep("processing");
 
     try {
-      // Step 1: Ensure image is fully ready (add delay for image processing)
+      // Step 1: Ensure image is fully ready (increase delay for better reliability)
       setProgress(10);
       console.log("Waiting for image to be fully ready...");
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds for image processing
+      await new Promise((resolve) => setTimeout(resolve, 3000)); // Increased to 3 seconds
 
       // Step 2: Analyze family photo
       setProgress(25);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1500)); // Increased delay
 
       // Step 3: Generate outline using Gemini API (if in real mode) or placeholder (if in simulated mode)
       setProgress(50);
@@ -64,13 +64,20 @@ const GetOutlinePage = () => {
         // Real API mode - try to generate outline with Gemini
         if (outlineData.photo) {
           try {
-            // Add retry mechanism for better reliability
+            // Enhanced retry mechanism with exponential backoff
             let retryCount = 0;
-            const maxRetries = 2;
+            const maxRetries = 3; // Increased from 2 to 3
 
             while (retryCount < maxRetries && !outlineGenerated) {
               try {
                 console.log(`Attempt ${retryCount + 1} to generate outline...`);
+
+                // Add a small delay before each attempt to avoid rate limiting
+                if (retryCount > 0) {
+                  const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 2s, 4s, 8s
+                  console.log(`Waiting ${delay}ms before retry...`);
+                  await new Promise((resolve) => setTimeout(resolve, delay));
+                }
 
                 const response = await fetch("/api/generate-outline", {
                   method: "POST",
@@ -99,28 +106,19 @@ const GetOutlinePage = () => {
                     outlineGenerated = true;
                   } else {
                     console.error("Failed to generate outline:", result.error);
+                    // Log more details for debugging
+                    console.error("Full API response:", result);
                   }
                 } else {
                   console.error("API request failed:", response.status);
-                }
-
-                if (!outlineGenerated && retryCount < maxRetries - 1) {
-                  console.log(
-                    `Retrying in 3 seconds... (attempt ${retryCount + 2})`
-                  );
-                  await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3 seconds before retry
+                  const errorText = await response.text();
+                  console.error("Error response:", errorText);
                 }
               } catch (apiError) {
                 console.error(
                   `API call error on attempt ${retryCount + 1}:`,
                   apiError
                 );
-                if (retryCount < maxRetries - 1) {
-                  console.log(
-                    `Retrying in 3 seconds... (attempt ${retryCount + 2})`
-                  );
-                  await new Promise((resolve) => setTimeout(resolve, 3000));
-                }
               }
 
               retryCount++;
