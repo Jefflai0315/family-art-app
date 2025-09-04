@@ -42,8 +42,7 @@ const ArtworkScanScreen = ({
     }
   };
 
-  const handleImageLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = event.currentTarget;
+  const handleImageLoad = () => {
     // Reset crop to center of the image
     setCrop({
       unit: "%",
@@ -123,6 +122,34 @@ const ArtworkScanScreen = ({
 
     setIsSubmitting(true);
     try {
+      // First check if there's already an animation for this queue number
+      const checkResponse = await fetch(
+        `/api/get-animation?queueNumber=${queueNumber}`
+      );
+      if (checkResponse.ok) {
+        const checkResult = await checkResponse.json();
+        if (checkResult.success && checkResult.animation) {
+          const existingAnimation = checkResult.animation;
+          if (
+            existingAnimation.status === "success" &&
+            existingAnimation.cloudinaryVideoUrl
+          ) {
+            // Animation already exists and is complete
+            onArtworkScanned(existingAnimation.cloudinaryVideoUrl);
+            console.log("Animation already exists and is complete, yess");
+            return;
+          } else if (
+            ["queuing", "processing"].includes(existingAnimation.status)
+          ) {
+            // Animation is already being processed
+            alert(
+              "Animation is already being processed for this queue number. Please wait for it to complete."
+            );
+            return;
+          }
+        }
+      }
+
       // Call the wavespeed API through our animate-artwork endpoint
       const response = await fetch("/api/animate-artwork", {
         method: "POST",
@@ -142,11 +169,9 @@ const ArtworkScanScreen = ({
 
         if (result.success) {
           console.log("Animation submitted successfully:", result.taskId);
-          // Pass the animation result to the parent component
-          // The API returns the final animation URL after polling is complete
-          onArtworkScanned(
-            result.cloudinaryVideoUrl || result.downloadUrl || croppedImage
-          );
+          // Instead of passing the result directly, trigger the parent to poll the database
+          // The parent will handle polling and showing the processing screen
+          onArtworkScanned("processing");
         } else {
           console.error("Animation submission failed:", result.error);
           alert("Failed to submit artwork for animation. Please try again.");

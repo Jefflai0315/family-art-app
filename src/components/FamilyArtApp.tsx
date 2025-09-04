@@ -9,6 +9,8 @@ import PrintReadyScreen from "./PrintReadyScreen";
 import ColoringInstructionsScreen from "./ColoringInstructionsScreen";
 import QueueNumberInputScreen from "./QueueNumberInputScreen";
 import ArtworkScanScreen from "./ArtworkScanScreen";
+import AnimationInputScreen from "./AnimationInputScreen";
+import AnimationGalleryScreen from "./AnimationGalleryScreen";
 import EnhancingScreen from "./EnhancingScreen";
 import FinalResultScreen from "./FinalResultScreen";
 import OutlineFailedScreen from "./OutlineFailedScreen";
@@ -26,6 +28,20 @@ interface FamilyData {
   animation: string | null;
 }
 
+interface Animation {
+  taskId: string;
+  status: string;
+  downloadUrl?: string;
+  cloudinaryVideoUrl?: string;
+  cloudinaryImageUrl?: string;
+  imageUrl?: string;
+  prompt?: string;
+  familyArtId: string;
+  createdAt: string;
+  updatedAt: string;
+  errorMessage?: string;
+}
+
 const FamilyArtApp = () => {
   const [currentStep, setCurrentStep] = useState("welcome");
   const [familyData, setFamilyData] = useState<FamilyData>({
@@ -40,6 +56,8 @@ const FamilyArtApp = () => {
   const [artworkData, setArtworkData] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [animations, setAnimations] = useState<Animation[]>([]);
+  const [currentQueueNumber, setCurrentQueueNumber] = useState<string>("");
 
   const processPhoto = async () => {
     setProcessing(true);
@@ -216,7 +234,51 @@ const FamilyArtApp = () => {
   };
 
   const processArtworkAnimation = async (artworkData: string) => {
-    // Store the artwork data and proceed to the enhancing screen
+    console.log("processArtworkAnimation called with:", artworkData);
+
+    // If we already have a video URL (from existing animation), use it directly
+    if (artworkData && artworkData.startsWith("http")) {
+      console.log("Using existing animation URL:", artworkData);
+      setFamilyData((prev) => ({
+        ...prev,
+        animation: artworkData,
+      }));
+      setCurrentStep("final-result");
+      return;
+    }
+
+    // If it's "processing", show processing screen
+    if (artworkData === "processing") {
+      console.log("Animation is processing, showing processing screen");
+      setProcessing(true);
+      setCurrentStep("enhancing");
+
+      // Simulate processing steps for the animation
+      const steps = [
+        { text: "Processing your artwork...", delay: 1000 },
+        { text: "AI analyzing colors...", delay: 2000 },
+        { text: "Creating animation...", delay: 3000 },
+        { text: "Finalizing...", delay: 1500 },
+      ];
+
+      for (let i = 0; i < steps.length; i++) {
+        await new Promise((resolve) => setTimeout(resolve, steps[i].delay));
+        setProgress(((i + 1) / steps.length) * 100);
+      }
+
+      // Set placeholder animation URL for now
+      setFamilyData((prev) => ({
+        ...prev,
+        animation:
+          "https://res.cloudinary.com/drb3jrfq1/video/upload/v1754711869/mural-app/ydcgrehf44vmyequiuxs.mp4g",
+      }));
+
+      setProcessing(false);
+      setCurrentStep("final-result");
+      return;
+    }
+
+    // Default case: process new artwork
     setArtworkData(artworkData);
     setProcessing(true);
     setCurrentStep("enhancing");
@@ -236,7 +298,6 @@ const FamilyArtApp = () => {
       }
 
       // Set placeholder animation URL for now
-      // In a real implementation, you might want to poll the animation status
       setFamilyData((prev) => ({
         ...prev,
         artwork: artworkData,
@@ -321,6 +382,106 @@ const FamilyArtApp = () => {
       animation: null,
     });
     setProgress(0);
+    setAnimations([]);
+    setCurrentQueueNumber("");
+  };
+
+  // New functions for improved animation flow
+  const handleRetrieveAnimations = async (queueNumber: string) => {
+    try {
+      console.log("Retrieving animations for queue:", queueNumber);
+      const response = await fetch(
+        `/api/get-animation?queueNumber=${queueNumber}`
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.animations) {
+          setAnimations(result.animations);
+          setCurrentQueueNumber(queueNumber);
+          setCurrentStep("animation-gallery");
+        } else {
+          alert("No animations found for this queue number");
+        }
+      } else {
+        alert("Failed to retrieve animations. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error retrieving animations:", error);
+      alert("An error occurred while retrieving animations. Please try again.");
+    }
+  };
+
+  const handleGenerateAnimation = async (
+    queueNumber: string,
+    imageData: string
+  ) => {
+    try {
+      console.log("Generating animation for queue:", queueNumber);
+      setFamilyData((prev) => ({ ...prev, queueNumber }));
+      setArtworkData(imageData);
+
+      // Call the animation API
+      const response = await fetch("/api/animate-artwork", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageUrl: imageData,
+          prompt:
+            "Bring this family artwork to life with gentle animation and flowing colors",
+          familyArtId: queueNumber,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          console.log("Animation submitted successfully:", result.taskId);
+          setCurrentStep("enhancing");
+          setProcessing(true);
+
+          // Simulate processing
+          const steps = [
+            { text: "Processing your artwork...", delay: 1000 },
+            { text: "AI analyzing colors...", delay: 2000 },
+            { text: "Creating animation...", delay: 3000 },
+            { text: "Finalizing...", delay: 1500 },
+          ];
+
+          for (let i = 0; i < steps.length; i++) {
+            await new Promise((resolve) => setTimeout(resolve, steps[i].delay));
+            setProgress(((i + 1) / steps.length) * 100);
+          }
+
+          // Set the animation URL
+          setFamilyData((prev) => ({
+            ...prev,
+            animation:
+              result.cloudinaryVideoUrl || result.downloadUrl || "placeholder",
+          }));
+
+          setProcessing(false);
+          setCurrentStep("final-result");
+        } else {
+          alert("Failed to generate animation. Please try again.");
+        }
+      } else {
+        alert("Failed to submit animation request. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error generating animation:", error);
+      alert("An error occurred while generating animation. Please try again.");
+    }
+  };
+
+  const handleGoToAnimationInput = () => {
+    setCurrentStep("animation-input");
+  };
+
+  const handleGoToGenerateNew = () => {
+    setCurrentStep("animation-input");
   };
 
   const renderCurrentStep = () => {
@@ -329,7 +490,7 @@ const FamilyArtApp = () => {
         return (
           <WelcomeScreen
             onStart={() => setCurrentStep("capture")}
-            onSubmitArtwork={() => setCurrentStep("queue-input")}
+            onSubmitArtwork={() => setCurrentStep("animation-input")}
           />
         );
       case "capture":
@@ -406,13 +567,35 @@ const FamilyArtApp = () => {
             onBack={() => setCurrentStep("artwork-scan")}
           />
         );
+      case "animation-input":
+        return (
+          <AnimationInputScreen
+            onRetrieveAnimations={handleRetrieveAnimations}
+            onGenerateAnimation={handleGenerateAnimation}
+            onBack={() => setCurrentStep("welcome")}
+          />
+        );
+      case "animation-gallery":
+        return (
+          <AnimationGalleryScreen
+            animations={animations}
+            queueNumber={currentQueueNumber}
+            onBack={() => setCurrentStep("animation-input")}
+            onGenerateNew={handleGoToGenerateNew}
+          />
+        );
       case "final-result":
-        return <FinalResultScreen onRestart={handleRestart} />;
+        return (
+          <FinalResultScreen
+            onRestart={handleRestart}
+            animationUrl={familyData.animation}
+          />
+        );
       default:
         return (
           <WelcomeScreen
             onStart={() => setCurrentStep("capture")}
-            onSubmitArtwork={() => setCurrentStep("queue-input")}
+            onSubmitArtwork={() => setCurrentStep("animation-input")}
           />
         );
     }

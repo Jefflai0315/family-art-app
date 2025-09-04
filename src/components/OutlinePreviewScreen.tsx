@@ -17,6 +17,17 @@ const OutlinePreviewScreen: React.FC<OutlinePreviewScreenProps> = ({
   onRegenerate,
   onBack,
 }) => {
+  const handleDownload = () => {
+    if (!generatedOutline) return;
+
+    // Create a temporary anchor element to trigger download
+    const link = document.createElement("a");
+    link.href = generatedOutline;
+    link.download = `coloring-outline-${queueNumber || "outline"}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       <div className="max-w-4xl mx-auto">
@@ -73,6 +84,14 @@ const OutlinePreviewScreen: React.FC<OutlinePreviewScreenProps> = ({
             className="px-8 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors duration-200 flex items-center justify-center gap-2"
           >
             ← Back
+          </button>
+
+          <button
+            onClick={handleDownload}
+            disabled={!generatedOutline}
+            className="px-8 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            📥 Download
           </button>
 
           <button

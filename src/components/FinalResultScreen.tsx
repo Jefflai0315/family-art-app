@@ -12,6 +12,7 @@ const FinalResultScreen = ({
   onRestart,
   animationUrl,
 }: FinalResultScreenProps) => {
+  console.log("FinalResultScreen received animationUrl:", animationUrl);
   const downloadVideo = async (url: string, filename: string) => {
     try {
       // If it's a data URL, download directly
