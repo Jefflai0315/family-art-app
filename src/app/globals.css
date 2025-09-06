@@ -1,8 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Permanent+Marker&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #000000;
+  --foreground: #f5f5f5;
 }
 
 @theme inline {
@@ -10,20 +11,84 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-caveat: 'Caveat', cursive;
+  --font-permanent-marker: 'Permanent Marker', cursive;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
 }
+
+/* Nostalgic background pattern */
+.bg-grid-white {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.bg-grid-white\/\[0\.05\] {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Custom fonts */
+.font-caveat {
+  font-family: 'Caveat', cursive;
+}
+
+.font-permanent-marker {
+  font-family: 'Permanent Marker', cursive;
+}
+
+/* Polaroid card shadows and effects */
+.polaroid-shadow {
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.1),
+    0 8px 16px rgba(0, 0, 0, 0.1),
+    0 16px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* Vintage button styles */
+.vintage-button {
+  font-family: 'Permanent Marker', cursive;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+  transform-style: preserve-3d;
+}
+
+.vintage-button:hover {
+  transform: translateY(-2px) rotate(-1deg);
+}
+
+.vintage-button:active {
+  transform: translateY(0) rotate(0deg);
+}
+
+/* Primary button style */
+.primary-button {
+  @apply font-permanent-marker text-xl text-center text-black bg-yellow-400 py-3 px-8 rounded-sm transform transition-transform duration-200 hover:scale-105 hover:-rotate-2 hover:bg-yellow-300;
+  box-shadow: 2px 2px 0px 2px rgba(0,0,0,0.2);
+}
+
+/* Secondary button style */
+.secondary-button {
+  @apply font-permanent-marker text-xl text-center text-white bg-white/10 backdrop-blur-sm border-2 border-white/80 py-3 px-8 rounded-sm transform transition-transform duration-200 hover:scale-105 hover:rotate-2 hover:bg-white hover:text-black;
+}
+
+/* Scattered polaroid positions */
+.scattered-1 { top: 5%; left: 10%; transform: rotate(-8deg); }
+.scattered-2 { top: 15%; left: 60%; transform: rotate(5deg); }
+.scattered-3 { top: 45%; left: 5%; transform: rotate(3deg); }
+.scattered-4 { top: 2%; left: 35%; transform: rotate(10deg); }
+.scattered-5 { top: 40%; left: 70%; transform: rotate(-12deg); }
+.scattered-6 { top: 50%; left: 38%; transform: rotate(-3deg); }
 
 @keyframes fade-out {
   0% {
@@ -34,6 +99,51 @@ body {
   }
 }
 
+@keyframes develop {
+  0% {
+    opacity: 0.8;
+    filter: sepia(1) contrast(0.8) brightness(0.8);
+  }
+  100% {
+    opacity: 1;
+    filter: none;
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
 .animate-fade-out {
   animation: fade-out 3s ease-in-out forwards;
+}
+
+.animate-develop {
+  animation: develop 4s ease-in-out forwards;
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Ghost polaroid animations */
+@keyframes ghost-float {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-10px) rotate(2deg);
+    opacity: 0.1;
+  }
+  100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.3;
+  }
+}
+
+.ghost-polaroid {
+  animation: ghost-float 3s ease-in-out infinite;
 }

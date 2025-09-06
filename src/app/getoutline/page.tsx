@@ -14,6 +14,7 @@ interface OutlineData {
   queueNumber: string | null;
   photo: string | null;
   outline: string | null;
+  aspectRatio: "4:3" | "1:1" | "16:9";
 }
 
 const GetOutlinePage = () => {
@@ -23,12 +24,16 @@ const GetOutlinePage = () => {
     queueNumber: null,
     photo: null,
     outline: null,
+    aspectRatio: "4:3",
   });
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  const handlePhotoCapture = (photoData: string) => {
-    setOutlineData((prev) => ({ ...prev, photo: photoData }));
+  const handlePhotoCapture = (
+    photoData: string,
+    aspectRatio: "4:3" | "1:1" | "16:9"
+  ) => {
+    setOutlineData((prev) => ({ ...prev, photo: photoData, aspectRatio }));
     setCurrentStep("queue-input"); // Go to queue input instead of processing directly
   };
 
@@ -182,6 +187,7 @@ const GetOutlinePage = () => {
       queueNumber: null,
       photo: null,
       outline: null,
+      aspectRatio: "4:3",
     });
     setProgress(0);
   };
@@ -210,6 +216,7 @@ const GetOutlinePage = () => {
             originalPhoto={outlineData.photo}
             generatedOutline={outlineData.outline}
             queueNumber={outlineData.queueNumber || "00000"}
+            aspectRatio={outlineData.aspectRatio}
             onProceed={() => {
               // Redirect to the animation page with queue number
               window.location.href = `/getanim?queue=${outlineData.queueNumber}`;

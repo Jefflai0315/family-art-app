@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
-import { Play, Share2, Download } from "lucide-react";
+import { motion } from "framer-motion";
+import { Share2, Download } from "lucide-react";
+import PolaroidCard from "./PolaroidCard";
 
 interface FinalResultScreenProps {
   onRestart: () => void;
@@ -13,6 +15,7 @@ const FinalResultScreen = ({
   animationUrl,
 }: FinalResultScreenProps) => {
   console.log("FinalResultScreen received animationUrl:", animationUrl);
+
   const downloadVideo = async (url: string, filename: string) => {
     try {
       // If it's a data URL, download directly
@@ -52,103 +55,99 @@ const FinalResultScreen = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
-        <div className="mb-6">
-          <div className="w-24 h-24 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-            <Play className="w-12 h-12 text-white" />
-          </div>
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">
-            Your Masterpiece!
-          </h2>
-          <p className="text-gray-600">Watch your art come alive</p>
-        </div>
+    <div className="relative flex flex-col items-center justify-center w-full h-full flex-1 min-h-0">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="text-center mb-8"
+      >
+        <h1 className="text-4xl sm:text-6xl md:text-8xl font-caveat font-bold text-neutral-100 mb-4">
+          🎉 Your Masterpiece!
+        </h1>
+        <p className="font-permanent-marker text-neutral-300 text-xl tracking-wide">
+          Watch your art come alive
+        </p>
+      </motion.div>
 
-        {/* Animation preview */}
-        <div className="bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl p-6 mb-6">
-          {animationUrl ? (
-            <div className="bg-white rounded-xl overflow-hidden">
-              {animationUrl.includes("video") ||
-              animationUrl.includes("mp4") ? (
-                <video
-                  src={animationUrl}
-                  controls
-                  className="w-full h-48 object-cover"
-                  poster="https://via.placeholder.com/400x300/4F46E5/FFFFFF?text=Loading+Video..."
-                >
-                  Your browser does not support the video tag.
-                </video>
-              ) : (
-                <img
-                  src={animationUrl}
-                  alt="Animated family artwork"
-                  className="w-full h-48 object-cover rounded-xl"
-                />
-              )}
-            </div>
-          ) : (
-            <div className="bg-white rounded-xl h-48 flex items-center justify-center border-4 border-dashed border-purple-300">
-              <div className="text-center text-purple-600">
-                <Play className="w-16 h-16 mx-auto mb-2 animate-pulse" />
-                <p className="font-semibold">Animated Family Portrait</p>
-                <p className="text-sm opacity-75">Tap to play</p>
-              </div>
-            </div>
-          )}
-        </div>
+      {/* Main polaroid with animation */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.3, duration: 0.8, type: "spring" }}
+        className="mb-8 flex justify-center"
+      >
+        <PolaroidCard
+          caption="Animated Artwork"
+          status="done"
+          imageUrl={animationUrl || undefined}
+          onDownload={() => {
+            if (animationUrl) {
+              downloadVideo(animationUrl, "animated-family-artwork.mp4");
+            }
+          }}
+          onShake={() => {
+            if (animationUrl && navigator.share) {
+              navigator.share({
+                title: "My Animated Family Artwork",
+                text: "Check out my animated art!",
+                url: animationUrl,
+              });
+            } else if (animationUrl) {
+              navigator.clipboard.writeText(animationUrl);
+              alert("Animation URL copied to clipboard!");
+            }
+          }}
+          isMobile={true}
+          className="w-80"
+        />
+      </motion.div>
 
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <button
-            onClick={() => {
-              if (animationUrl && navigator.share) {
-                navigator.share({
-                  title: "My Animated Family Artwork",
-                  text: "Check out my animated art at BazGym!",
-                  url: animationUrl,
-                });
-              } else if (animationUrl) {
-                // Fallback: copy to clipboard
-                navigator.clipboard.writeText(animationUrl);
-                alert("Animation URL copied to clipboard!");
-              }
-            }}
-            disabled={!animationUrl}
-            className="bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Share2 className="w-5 h-5 inline mr-2" />
-            Share
-          </button>
-          <button
-            onClick={() => {
-              if (animationUrl) {
-                downloadVideo(animationUrl, "animated-family-artwork.mp4");
-              }
-            }}
-            disabled={!animationUrl}
-            className="bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Download className="w-5 h-5 inline mr-2" />
-            Save
-          </button>
-        </div>
-
-        {/* <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-4 mb-6">
-          <p className="text-yellow-800 text-sm font-medium mb-1">
-            🎯 Try AR Experience!
-          </p>
-          <p className="text-yellow-700 text-xs">
-            Point your phone at the printed AR marker to see your art in 3D
-            space!
-          </p>
-        </div> */}
+      {/* Action buttons */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6, duration: 0.6 }}
+        className="flex flex-col sm:flex-row gap-4"
+      >
+        <button
+          onClick={() => {
+            if (animationUrl && navigator.share) {
+              navigator.share({
+                title: "My Animated Family Artwork",
+                text: "Check out my animated art!",
+                url: animationUrl,
+              });
+            } else if (animationUrl) {
+              navigator.clipboard.writeText(animationUrl);
+              alert("Animation URL copied to clipboard!");
+            }
+          }}
+          disabled={!animationUrl}
+          className="secondary-button disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Share2 className="w-5 h-5 inline mr-2" />
+          Share
+        </button>
 
         <button
-          onClick={onRestart}
-          className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-4 rounded-2xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+          onClick={() => {
+            if (animationUrl) {
+              downloadVideo(animationUrl, "animated-family-artwork.mp4");
+            }
+          }}
+          disabled={!animationUrl}
+          className="primary-button disabled:opacity-50 disabled:cursor-not-allowed"
         >
+          <Download className="w-5 h-5 inline mr-2" />
+          Save
+        </button>
+
+        <button onClick={onRestart} className="secondary-button">
           Create Another Masterpiece
         </button>
-      </div>
+      </motion.div>
     </div>
   );
 };

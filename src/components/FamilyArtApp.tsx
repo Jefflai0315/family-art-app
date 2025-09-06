@@ -26,6 +26,7 @@ interface FamilyData {
   artwork: string | null;
   enhanced: string | null;
   animation: string | null;
+  aspectRatio: "4:3" | "1:1" | "16:9";
 }
 
 interface Animation {
@@ -52,6 +53,7 @@ const FamilyArtApp = () => {
     artwork: null,
     enhanced: null,
     animation: null,
+    aspectRatio: "4:3",
   });
   const [artworkData, setArtworkData] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -352,8 +354,11 @@ const FamilyArtApp = () => {
     }
   };
 
-  const handlePhotoCapture = (photoData: string) => {
-    setFamilyData((prev) => ({ ...prev, photo: photoData }));
+  const handlePhotoCapture = (
+    photoData: string,
+    aspectRatio: "4:3" | "1:1" | "16:9"
+  ) => {
+    setFamilyData((prev) => ({ ...prev, photo: photoData, aspectRatio }));
     processPhoto();
   };
 
@@ -380,6 +385,7 @@ const FamilyArtApp = () => {
       artwork: null,
       enhanced: null,
       animation: null,
+      aspectRatio: "4:3",
     });
     setProgress(0);
     setAnimations([]);
@@ -508,6 +514,7 @@ const FamilyArtApp = () => {
             originalPhoto={familyData.photo}
             generatedOutline={familyData.outline}
             queueNumber={familyData.queueNumber || "00000"}
+            aspectRatio={familyData.aspectRatio}
             onProceed={() => setCurrentStep("queue-ready")}
             onRegenerate={handleRegenerateOutline}
             onBack={() => setCurrentStep("capture")}
@@ -601,7 +608,14 @@ const FamilyArtApp = () => {
     }
   };
 
-  return <div className="font-sans">{renderCurrentStep()}</div>;
+  return (
+    <main className="bg-black text-neutral-200 min-h-screen w-full flex flex-col items-center justify-center p-4 pb-24 overflow-hidden relative">
+      <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05]"></div>
+      <div className="z-10 flex flex-col items-center justify-center w-full h-full flex-1 min-h-0">
+        {renderCurrentStep()}
+      </div>
+    </main>
+  );
 };
 
 export default FamilyArtApp;

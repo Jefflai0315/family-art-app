@@ -19,10 +19,10 @@ const ArtworkScanScreen = ({
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [crop, setCrop] = useState<Crop>({
     unit: "%",
-    width: 70,
-    height: 70,
-    x: 15,
-    y: 15,
+    width: 75,
+    height: 56.25, // 4:3 aspect ratio (75 * 3/4 = 56.25)
+    x: 12.5,
+    y: 21.875,
   });
   const [isCropping, setIsCropping] = useState(false);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
@@ -43,13 +43,13 @@ const ArtworkScanScreen = ({
   };
 
   const handleImageLoad = () => {
-    // Reset crop to center of the image
+    // Reset crop to center of the image with 4:3 aspect ratio
     setCrop({
       unit: "%",
-      width: 70,
-      height: 70,
-      x: 15,
-      y: 15,
+      width: 75,
+      height: 56.25, // 4:3 aspect ratio (75 * 3/4 = 56.25)
+      x: 12.5,
+      y: 21.875,
     });
   };
 

@@ -125,6 +125,32 @@ Creates an animated video from finished artwork using Wavespeed AI.
 }
 ```
 
+### `/api/get-animation`
+
+Retrieves animation results from MongoDB by queue number or task ID.
+
+**Request:** `GET /api/get-animation?queueNumber=12345` or `GET /api/get-animation?taskId=wavespeedai_1234567890`
+
+**Response:**
+```json
+{
+  "success": true,
+  "animation": {
+    "taskId": "wavespeedai_1234567890",
+    "status": "success",
+    "downloadUrl": "https://wavespeed.ai/...",
+    "cloudinaryVideoUrl": "https://cloudinary.com/...",
+    "cloudinaryImageUrl": "https://cloudinary.com/...",
+    "imageUrl": "https://cloudinary.com/...",
+    "prompt": "Animation prompt description",
+    "familyArtId": "12345",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:05:00.000Z",
+    "errorMessage": null
+  }
+}
+```
+
 ### `/api/get-next-queue-number`
 
 Gets the next sequential queue number for new submissions.
@@ -148,8 +174,10 @@ Gets the next sequential queue number for new submissions.
 4. **Cloud Storage**: Both original photo and generated outline are uploaded to Cloudinary
 5. **Database Storage**: Submission data is saved to MongoDB with timestamps
 6. **Print Ready**: Outline is optimized for printing and coloring
-7. **Enhancement**: Users can scan their colored artwork for AI enhancement
-8. **Animation**: Final result includes animated elements
+7. **Artwork Upload**: Users upload their completed colored artwork
+8. **Animation Generation**: Artwork is sent to Wavespeed AI for animation
+9. **Result Storage**: Animation results are saved to MongoDB and Cloudinary
+10. **Animation Retrieval**: Users can access their animations anytime using their queue number
 
 ## Technologies Used
 

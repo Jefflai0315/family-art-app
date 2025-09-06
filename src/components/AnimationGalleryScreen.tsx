@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
-import { Play, Download, Share2, ArrowLeft, Calendar } from "lucide-react";
+import React, { useRef } from "react";
+import { motion } from "framer-motion";
+import PolaroidCard from "./PolaroidCard";
 
 interface Animation {
   taskId: string;
@@ -30,6 +31,8 @@ const AnimationGalleryScreen = ({
   onBack,
   onGenerateNew,
 }: AnimationGalleryScreenProps) => {
+  const dragAreaRef = useRef<HTMLDivElement>(null);
+
   const downloadVideo = async (url: string, filename: string) => {
     try {
       // If it's a data URL, download directly
@@ -68,163 +71,194 @@ const AnimationGalleryScreen = ({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   const successfulAnimations = animations.filter(
     (anim) => anim.status === "success" && anim.cloudinaryVideoUrl
   );
 
+  // Pre-defined positions for scattered polaroids
+  const POSITIONS = [
+    { top: "5%", left: "10%", rotate: -8 },
+    { top: "15%", left: "60%", rotate: 5 },
+    { top: "45%", left: "5%", rotate: 3 },
+    { top: "2%", left: "35%", rotate: 10 },
+    { top: "40%", left: "70%", rotate: -12 },
+    { top: "50%", left: "38%", rotate: -3 },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-4">
-            🎬 Your Animation Gallery
-          </h1>
-          <p className="text-white/80 text-lg">
-            Queue Number: <span className="font-semibold">{queueNumber}</span>
-          </p>
-          <p className="text-white/60">
-            Found {successfulAnimations.length} animation
-            {successfulAnimations.length !== 1 ? "s" : ""}
-          </p>
-        </div>
+    <div className="relative flex flex-col items-center justify-center w-full h-full flex-1 min-h-0">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="text-center mb-8"
+      >
+        <h1 className="text-4xl sm:text-6xl md:text-8xl font-caveat font-bold text-neutral-100 mb-4">
+          🎬 Animation Gallery
+        </h1>
+        <p className="font-permanent-marker text-neutral-300 text-xl tracking-wide">
+          Queue Number: <span className="text-yellow-400">{queueNumber}</span>
+        </p>
+        <p className="text-neutral-400 mt-2">
+          Found {successfulAnimations.length} animation
+          {successfulAnimations.length !== 1 ? "s" : ""}
+        </p>
+      </motion.div>
 
-        {successfulAnimations.length === 0 ? (
-          <div className="bg-white rounded-3xl shadow-2xl p-8 text-center">
-            <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto mb-6 flex items-center justify-center">
-              <Play className="w-12 h-12 text-gray-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              No Animations Found
-            </h2>
-            <p className="text-gray-600 mb-8">
-              No completed animations found for queue number {queueNumber}
-            </p>
-            <div className="space-y-4">
-              <button
-                onClick={onGenerateNew}
-                className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-4 rounded-2xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
-              >
-                Create New Animation
-              </button>
-              <button
-                onClick={onBack}
-                className="w-full bg-gray-200 text-gray-700 py-3 rounded-2xl font-semibold hover:bg-gray-300 transition-colors duration-200"
-              >
-                Go Back
-              </button>
-            </div>
+      {successfulAnimations.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6 }}
+          className="flex flex-col items-center gap-6"
+        >
+          <PolaroidCard
+            caption="No Animations Yet"
+            status="done"
+            isMobile={true}
+            className="w-80"
+            aspectRatio="4:3"
+          />
+          <div className="flex flex-col sm:flex-row gap-4">
+            <button onClick={onGenerateNew} className="primary-button">
+              Create New Animation
+            </button>
+            <button onClick={onBack} className="secondary-button">
+              Go Back
+            </button>
           </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Animation Grid */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {successfulAnimations.map((animation, index) => (
-                <div
+        </motion.div>
+      ) : (
+        <>
+          {/* Mobile: Stacked layout */}
+          <div className="block md:hidden w-full max-w-sm space-y-6">
+            {successfulAnimations.map((animation, index) => (
+              <motion.div
+                key={animation.taskId}
+                initial={{ opacity: 0, scale: 0.8, y: 50 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{
+                  delay: index * 0.2,
+                  duration: 0.8,
+                  type: "spring",
+                }}
+                className="flex justify-center"
+              >
+                <PolaroidCard
+                  caption={`Animation ${index + 1}`}
+                  status="done"
+                  imageUrl={animation.cloudinaryImageUrl}
+                  videoUrl={animation.cloudinaryVideoUrl}
+                  onDownload={() => {
+                    if (animation.cloudinaryVideoUrl) {
+                      downloadVideo(
+                        animation.cloudinaryVideoUrl,
+                        `animation-${queueNumber}-${index + 1}.mp4`
+                      );
+                    }
+                  }}
+                  onShake={() => {
+                    if (animation.cloudinaryVideoUrl && navigator.share) {
+                      navigator.share({
+                        title: "My Animated Family Artwork",
+                        text: "Check out my animated art!",
+                        url: animation.cloudinaryVideoUrl,
+                      });
+                    } else if (animation.cloudinaryVideoUrl) {
+                      navigator.clipboard.writeText(
+                        animation.cloudinaryVideoUrl
+                      );
+                      alert("Animation URL copied to clipboard!");
+                    }
+                  }}
+                  isMobile={true}
+                  className="w-80"
+                  aspectRatio="4:3"
+                />
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Desktop: Scattered polaroid layout */}
+          <div
+            ref={dragAreaRef}
+            className="hidden md:block relative w-full max-w-6xl h-[600px] mt-4"
+          >
+            {successfulAnimations.map((animation, index) => {
+              const { top, left, rotate } = POSITIONS[index % POSITIONS.length];
+              return (
+                <motion.div
                   key={animation.taskId}
-                  className="bg-white rounded-2xl shadow-xl overflow-hidden"
+                  className="absolute cursor-grab active:cursor-grabbing"
+                  style={{ top, left }}
+                  initial={{ opacity: 0, scale: 0.5, y: 100, rotate: 0 }}
+                  animate={{
+                    opacity: 1,
+                    scale: 1,
+                    y: 0,
+                    rotate: `${rotate}deg`,
+                  }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 100,
+                    damping: 20,
+                    delay: index * 0.15,
+                  }}
                 >
-                  {/* Video Preview */}
-                  <div className="aspect-video bg-gray-100">
-                    {animation.cloudinaryVideoUrl ? (
-                      <video
-                        src={animation.cloudinaryVideoUrl}
-                        controls
-                        className="w-full h-full object-cover"
-                        poster={animation.cloudinaryImageUrl}
-                      >
-                        Your browser does not support the video tag.
-                      </video>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Play className="w-16 h-16 text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Animation Info */}
-                  <div className="p-4">
-                    <div className="flex items-center text-sm text-gray-500 mb-2">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      {formatDate(animation.createdAt)}
-                    </div>
-                    {animation.prompt && (
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                        {animation.prompt}
-                      </p>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => {
-                          if (animation.cloudinaryVideoUrl && navigator.share) {
-                            navigator.share({
-                              title: "My Animated Family Artwork",
-                              text: "Check out my animated art!",
-                              url: animation.cloudinaryVideoUrl,
-                            });
-                          } else if (animation.cloudinaryVideoUrl) {
-                            navigator.clipboard.writeText(
-                              animation.cloudinaryVideoUrl
-                            );
-                            alert("Animation URL copied to clipboard!");
-                          }
-                        }}
-                        className="bg-gradient-to-r from-blue-500 to-purple-500 text-white py-2 px-3 rounded-lg font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-1"
-                      >
-                        <Share2 className="w-4 h-4" />
-                        <span>Share</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (animation.cloudinaryVideoUrl) {
-                            downloadVideo(
-                              animation.cloudinaryVideoUrl,
-                              `animation-${queueNumber}-${index + 1}.mp4`
-                            );
-                          }
-                        }}
-                        className="bg-gradient-to-r from-green-500 to-blue-500 text-white py-2 px-3 rounded-lg font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-1"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>Save</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={onGenerateNew}
-                className="bg-gradient-to-r from-green-500 to-blue-500 text-white py-4 px-8 rounded-2xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
-              >
-                Create Another Animation
-              </button>
-              <button
-                onClick={onBack}
-                className="bg-gray-200 text-gray-700 py-4 px-8 rounded-2xl font-semibold hover:bg-gray-300 transition-colors duration-200"
-              >
-                Go Back
-              </button>
-            </div>
+                  <PolaroidCard
+                    dragConstraintsRef={
+                      dragAreaRef as React.RefObject<HTMLElement>
+                    }
+                    caption={`Animation ${index + 1}`}
+                    status="done"
+                    imageUrl={animation.cloudinaryImageUrl}
+                    videoUrl={animation.cloudinaryVideoUrl}
+                    onDownload={() => {
+                      if (animation.cloudinaryVideoUrl) {
+                        downloadVideo(
+                          animation.cloudinaryVideoUrl,
+                          `animation-${queueNumber}-${index + 1}.mp4`
+                        );
+                      }
+                    }}
+                    onShake={() => {
+                      if (animation.cloudinaryVideoUrl && navigator.share) {
+                        navigator.share({
+                          title: "My Animated Family Artwork",
+                          text: "Check out my animated art!",
+                          url: animation.cloudinaryVideoUrl,
+                        });
+                      } else if (animation.cloudinaryVideoUrl) {
+                        navigator.clipboard.writeText(
+                          animation.cloudinaryVideoUrl
+                        );
+                        alert("Animation URL copied to clipboard!");
+                      }
+                    }}
+                    aspectRatio="4:3"
+                  />
+                </motion.div>
+              );
+            })}
           </div>
-        )}
-      </div>
+
+          {/* Action Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 0.6 }}
+            className="flex flex-col sm:flex-row gap-4 mt-8"
+          >
+            <button onClick={onGenerateNew} className="primary-button">
+              Create Another Animation
+            </button>
+            <button onClick={onBack} className="secondary-button">
+              Go Back
+            </button>
+          </motion.div>
+        </>
+      )}
     </div>
   );
 };
