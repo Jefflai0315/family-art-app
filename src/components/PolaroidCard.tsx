@@ -113,8 +113,8 @@ const PolaroidCard: React.FC<PolaroidCardProps> = ({
   const lastShakeTime = useRef(0);
   const lastVelocity = useRef({ x: 0, y: 0 });
 
-  // Helper function to get aspect ratio class
-  const getAspectRatioClass = (ratio: "4:3" | "1:1" | "16:9") => {
+  // Helper function to get aspect ratio class for the image area only
+  const getImageAspectRatioClass = (ratio: "4:3" | "1:1" | "16:9") => {
     switch (ratio) {
       case "4:3":
         return "aspect-[4/3]";
@@ -195,7 +195,12 @@ const PolaroidCard: React.FC<PolaroidCardProps> = ({
 
   const cardInnerContent = (
     <>
-      <div className="w-full bg-neutral-900 shadow-inner flex-grow relative overflow-hidden group">
+      <div
+        className={cn(
+          "w-full bg-neutral-900 shadow-inner flex-grow relative overflow-hidden group",
+          getImageAspectRatioClass(aspectRatio)
+        )}
+      >
         {status === "pending" && <LoadingSpinner />}
         {status === "error" && <ErrorDisplay />}
         {status === "done" && (imageUrl || videoUrl) && (
@@ -337,7 +342,6 @@ const PolaroidCard: React.FC<PolaroidCardProps> = ({
       <div
         className={cn(
           "bg-neutral-100 dark:bg-neutral-100 !p-4 !pb-16 flex flex-col items-center justify-start w-80 max-w-full rounded-md shadow-lg relative",
-          getAspectRatioClass(aspectRatio),
           videoUrl ? "cursor-default" : "cursor-grab active:cursor-grabbing",
           className
         )}
@@ -351,7 +355,6 @@ const PolaroidCard: React.FC<PolaroidCardProps> = ({
     <motion.div
       className={cn(
         "bg-neutral-100 dark:bg-neutral-100 !p-4 !pb-16 flex flex-col items-center justify-start w-80 max-w-full rounded-md shadow-lg relative",
-        getAspectRatioClass(aspectRatio),
         videoUrl ? "cursor-default" : "cursor-grab active:cursor-grabbing",
         className
       )}

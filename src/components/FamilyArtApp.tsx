@@ -61,7 +61,7 @@ const FamilyArtApp = () => {
   const [animations, setAnimations] = useState<Animation[]>([]);
   const [currentQueueNumber, setCurrentQueueNumber] = useState<string>("");
 
-  const processPhoto = async () => {
+  const processPhoto = async (photoData?: string) => {
     setProcessing(true);
     setCurrentStep("processing");
 
@@ -81,7 +81,15 @@ const FamilyArtApp = () => {
 
       if (config.isReal()) {
         // Real API mode - try to generate outline with Gemini
-        if (familyData.photo) {
+
+        // Use passed photoData or fall back to familyData.photo
+        const currentPhoto = photoData || familyData.photo;
+
+        console.log(
+          "Processing photo:",
+          currentPhoto ? "Photo available" : "No photo"
+        );
+        if (currentPhoto) {
           try {
             // Add retry mechanism for better reliability
             let retryCount = 0;
@@ -97,7 +105,7 @@ const FamilyArtApp = () => {
                     "Content-Type": "application/json",
                   },
                   body: JSON.stringify({
-                    photoData: familyData.photo,
+                    photoData: currentPhoto,
                   }),
                 });
 
@@ -122,7 +130,7 @@ const FamilyArtApp = () => {
                           "Content-Type": "application/json",
                         },
                         body: JSON.stringify({
-                          originalPhoto: familyData.photo,
+                          originalPhoto: currentPhoto,
                           generatedOutline: result.outlineUrl,
                         }),
                       });
@@ -144,9 +152,11 @@ const FamilyArtApp = () => {
                           saveResult.queueNumber
                         );
                       } else {
+                        const errorData = await saveResponse.json();
                         console.error(
                           "Failed to save submission:",
-                          saveResponse.status
+                          saveResponse.status,
+                          errorData
                         );
                       }
                     } catch (saveError) {
@@ -359,7 +369,7 @@ const FamilyArtApp = () => {
     aspectRatio: "4:3" | "1:1" | "16:9"
   ) => {
     setFamilyData((prev) => ({ ...prev, photo: photoData, aspectRatio }));
-    processPhoto();
+    processPhoto(photoData);
   };
 
   const handleRegenerateOutline = () => {
@@ -482,10 +492,6 @@ const FamilyArtApp = () => {
     }
   };
 
-  const handleGoToAnimationInput = () => {
-    setCurrentStep("animation-input");
-  };
-
   const handleGoToGenerateNew = () => {
     setCurrentStep("animation-input");
   };
@@ -525,7 +531,7 @@ const FamilyArtApp = () => {
           <QueueReadyScreen
             queueNumber={familyData.queueNumber || "00000"}
             onUploadAnother={() => setCurrentStep("capture")}
-            onProceedToArtwork={() => setCurrentStep("queue-input")}
+            onProceedToArtwork={() => setCurrentStep("animation-input")}
           />
         );
       case "queue-input":
@@ -609,7 +615,7 @@ const FamilyArtApp = () => {
   };
 
   return (
-    <main className="bg-black text-neutral-200 min-h-screen w-full flex flex-col items-center justify-center p-4 pb-24 overflow-hidden relative">
+    <main className="bg-black text-neutral-200 min-h-screen w-full flex flex-col items-center justify-center p-4 pb-24 overflow-y-auto relative">
       <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05]"></div>
       <div className="z-10 flex flex-col items-center justify-center w-full h-full flex-1 min-h-0">
         {renderCurrentStep()}

@@ -29,10 +29,10 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
   const [rotation, setRotation] = useState(0);
   const [crop, setCrop] = useState<CropType>({
     unit: "%",
-    width: 75,
-    height: 56.25, // 4:3 aspect ratio (75 * 3/4 = 56.25)
-    x: 12.5,
-    y: 21.875,
+    width: 70,
+    height: 52.5, // 4:3 aspect ratio (70 * 3/4 = 52.5)
+    x: 15,
+    y: 23.75,
   });
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [croppedPreview, setCroppedPreview] = useState<string | null>(null);
@@ -46,13 +46,13 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
   const getCropDimensions = (preset: "4:3" | "1:1" | "16:9") => {
     switch (preset) {
       case "4:3":
-        return { width: 75, height: 56.25, x: 12.5, y: 21.875 };
+        return { width: 70, height: 52.5, x: 15, y: 23.75 }; // 4:3 ratio, centered
       case "1:1":
-        return { width: 60, height: 60, x: 20, y: 20 };
+        return { width: 60, height: 60, x: 20, y: 20 }; // Square, centered
       case "16:9":
-        return { width: 80, height: 45, x: 10, y: 27.5 };
+        return { width: 75, height: 42.2, x: 12.5, y: 28.9 }; // 16:9 ratio, centered
       default:
-        return { width: 75, height: 56.25, x: 12.5, y: 21.875 };
+        return { width: 70, height: 52.5, x: 15, y: 23.75 };
     }
   };
 
@@ -107,20 +107,50 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
     const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
     const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
 
+    // Set canvas size to the cropped dimensions
     canvas.width = completedCrop.width;
     canvas.height = completedCrop.height;
 
-    ctx.drawImage(
-      imgRef.current,
-      completedCrop.x * scaleX,
-      completedCrop.y * scaleY,
-      completedCrop.width * scaleX,
-      completedCrop.height * scaleY,
-      0,
-      0,
-      completedCrop.width,
-      completedCrop.height
-    );
+    // Apply rotation if needed
+    if (rotation !== 0) {
+      // Save the current context state
+      ctx.save();
+
+      // Move to the center of the canvas
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+
+      // Apply rotation
+      ctx.rotate((rotation * Math.PI) / 180);
+
+      // Draw the cropped image centered
+      ctx.drawImage(
+        imgRef.current,
+        completedCrop.x * scaleX,
+        completedCrop.y * scaleY,
+        completedCrop.width * scaleX,
+        completedCrop.height * scaleY,
+        -completedCrop.width / 2,
+        -completedCrop.height / 2,
+        completedCrop.width,
+        completedCrop.height
+      );
+
+      // Restore the context state
+      ctx.restore();
+    } else {
+      // No rotation, draw normally
+      ctx.drawImage(
+        imgRef.current,
+        completedCrop.x * scaleX,
+        completedCrop.y * scaleY,
+        completedCrop.width * scaleX,
+        completedCrop.height * scaleY,
+        0,
+        0,
+        completedCrop.width,
+        completedCrop.height
+      );
+    }
 
     const croppedPhotoData = canvas.toDataURL("image/jpeg");
     setCroppedPreview(croppedPhotoData);
@@ -257,7 +287,7 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
         </motion.div>
       ) : (
         // Crop interface
-        <div className="relative w-full max-w-4xl h-[600px] mt-4">
+        <div className="relative w-full max-w-4xl h-[75dvh] mt-4 flex items-center justify-center">
           {/* Crop preset controls */}
           <div className="absolute top-4 left-4 z-10 flex gap-2">
             {(["4:3", "1:1", "16:9"] as const).map((preset) => (
@@ -341,7 +371,7 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
               alt="Uploaded photo"
               className="max-w-full max-h-full object-contain"
               style={{
-                maxHeight: "70vh",
+                maxHeight: "65dvh",
                 transform: `rotate(${rotation}deg)`,
                 transition: "transform 0.3s ease-in-out",
               }}
