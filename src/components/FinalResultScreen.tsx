@@ -7,11 +7,13 @@ import PolaroidCard from "./PolaroidCard";
 
 interface FinalResultScreenProps {
   onRestart: () => void;
+  onCreateAnotherAnimation: () => void;
   animationUrl?: string | null;
 }
 
 const FinalResultScreen = ({
   onRestart,
+  onCreateAnotherAnimation,
   animationUrl,
 }: FinalResultScreenProps) => {
   console.log("FinalResultScreen received animationUrl:", animationUrl);
@@ -81,7 +83,7 @@ const FinalResultScreen = ({
         <PolaroidCard
           caption="Animated Artwork"
           status="done"
-          imageUrl={animationUrl || undefined}
+          videoUrl={animationUrl || undefined}
           onDownload={() => {
             if (animationUrl) {
               downloadVideo(animationUrl, "animated-family-artwork.mp4");
@@ -142,6 +144,10 @@ const FinalResultScreen = ({
         >
           <Download className="w-5 h-5 inline mr-2" />
           Save
+        </button>
+
+        <button onClick={onCreateAnotherAnimation} className="secondary-button">
+          Create Another Animation
         </button>
 
         <button onClick={onRestart} className="secondary-button">

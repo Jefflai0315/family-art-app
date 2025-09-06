@@ -7,15 +7,25 @@ import PolaroidCard from "./PolaroidCard";
 
 interface ProcessingScreenProps {
   progress: number;
+  steps?: string[];
+  title?: string;
+  subtitle?: string;
 }
 
-const ProcessingScreen = ({ progress }: ProcessingScreenProps) => {
-  const steps = [
+const ProcessingScreen = ({
+  progress,
+  steps: customSteps,
+  title = "✨ Creating Magic",
+  subtitle = "Your coloring outline is being prepared",
+}: ProcessingScreenProps) => {
+  const defaultSteps = [
     "Analyzing family photo...",
     "Generating outline with AI...",
     "Optimizing for printing...",
     "Ready for coloring!",
   ];
+
+  const steps = customSteps || defaultSteps;
 
   return (
     <div className="relative flex flex-col items-center justify-center w-full h-full flex-1 min-h-0">
@@ -27,10 +37,10 @@ const ProcessingScreen = ({ progress }: ProcessingScreenProps) => {
         className="text-center mb-8"
       >
         <h1 className="text-6xl md:text-8xl font-caveat font-bold text-neutral-100 mb-4">
-          ✨ Creating Magic
+          {title}
         </h1>
         <p className="font-permanent-marker text-neutral-300 text-xl tracking-wide">
-          Your coloring outline is being prepared
+          {subtitle}
         </p>
       </motion.div>
 

@@ -122,45 +122,24 @@ const AnimationInputScreen = ({
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5, duration: 0.8, type: "spring" }}
-            className="flex-1 flex justify-center"
+            className="flex-1 flex justify-center "
           >
-            <motion.div
-              whileHover={{ scale: 1.05, rotate: -2 }}
-              whileTap={{ scale: 0.95 }}
-              className="cursor-pointer"
-            >
-              <PolaroidCard
-                caption={isRetrieving ? "Retrieving..." : "Retrieve Animations"}
-                status={isRetrieving ? "pending" : "done"}
-                onAction={handleRetrieve}
-                isMobile={true}
-                className="w-80"
-                aspectRatio="4:3"
-              />
-            </motion.div>
-          </motion.div>
-
-          {/* Generate Animation Polaroid */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.7, duration: 0.8, type: "spring" }}
-            className="flex-1 flex justify-center"
-          >
-            <motion.div
+            <motion.button
+              onClick={handleRetrieve}
+              className={`secondary-button w-full${
+                queueNumber.trim() === ""
+                  ? "cursor-not-allowed"
+                  : "cursor-pointer"
+              }`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 3.6, duration: 0.6 }}
               whileHover={{ scale: 1.05, rotate: 2 }}
               whileTap={{ scale: 0.95 }}
-              className="cursor-pointer"
+              disabled={queueNumber.trim() === ""}
             >
-              <PolaroidCard
-                caption={isGenerating ? "Generating..." : "Generate New"}
-                status={isGenerating ? "pending" : "done"}
-                onAction={handleGenerate}
-                isMobile={true}
-                className="w-80"
-                aspectRatio="4:3"
-              />
-            </motion.div>
+              {isRetrieving ? "Retrieving..." : "Retrieve Animations"}
+            </motion.button>
           </motion.div>
         </div>
 
@@ -199,6 +178,17 @@ const AnimationInputScreen = ({
                     whileTap={{ scale: 0.95 }}
                   >
                     Remove Image
+                  </motion.button>
+                  {/* Generate Animation Polaroid */}
+                  <motion.button
+                    onClick={handleGenerate}
+                    className={`secondary-button w-full${
+                      queueNumber.trim() === ""
+                        ? "cursor-not-allowed"
+                        : "cursor-pointer"
+                    }`}
+                  >
+                    Generate New Animation
                   </motion.button>
                 </div>
               ) : (

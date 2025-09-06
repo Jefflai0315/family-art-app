@@ -285,11 +285,18 @@ const PolaroidCard: React.FC<PolaroidCardProps> = ({
                       : "opacity-80 filter sepia(1) contrast(0.8) brightness(0.8)"
                     : "opacity-0"
                 }`}
-                onLoadedData={() => setIsImageLoaded(true)}
+                onLoadedData={() => {
+                  console.log("Video loaded:", videoUrl);
+                  setIsImageLoaded(true);
+                }}
+                onError={(e) => {
+                  console.error("Video error:", e, videoUrl);
+                }}
                 controls
                 loop
                 muted
                 playsInline
+                autoPlay
                 preload="metadata"
               />
             ) : (

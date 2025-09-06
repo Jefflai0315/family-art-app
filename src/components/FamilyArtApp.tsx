@@ -437,6 +437,11 @@ const FamilyArtApp = () => {
       setFamilyData((prev) => ({ ...prev, queueNumber }));
       setArtworkData(imageData);
 
+      // Show loading screen immediately
+      setCurrentStep("animation-processing");
+      setProcessing(true);
+      setProgress(0);
+
       // Call the animation API
       const response = await fetch("/api/animate-artwork", {
         method: "POST",
@@ -455,23 +460,15 @@ const FamilyArtApp = () => {
         const result = await response.json();
         if (result.success) {
           console.log("Animation submitted successfully:", result.taskId);
-          setCurrentStep("enhancing");
-          setProcessing(true);
 
-          // Simulate processing
-          const steps = [
-            { text: "Processing your artwork...", delay: 1000 },
-            { text: "AI analyzing colors...", delay: 2000 },
-            { text: "Creating animation...", delay: 3000 },
-            { text: "Finalizing...", delay: 1500 },
-          ];
-
-          for (let i = 0; i < steps.length; i++) {
-            await new Promise((resolve) => setTimeout(resolve, steps[i].delay));
-            setProgress(((i + 1) / steps.length) * 100);
+          // Simulate animation processing with progress updates
+          const totalSteps = 5;
+          for (let i = 0; i < totalSteps; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            setProgress(((i + 1) / totalSteps) * 100);
           }
 
-          // Set the animation URL
+          // Set the animation URL and move to enhancing screen
           setFamilyData((prev) => ({
             ...prev,
             animation:
@@ -564,8 +561,21 @@ const FamilyArtApp = () => {
             queueNumber={familyData.queueNumber || undefined}
           />
         );
-      case "enhancing":
-        return <EnhancingScreen progress={progress} />;
+      case "animation-processing":
+        return (
+          <ProcessingScreen
+            progress={progress}
+            steps={[
+              "Analyzing your artwork...",
+              "Preparing animation frames...",
+              "Generating smooth motion...",
+              "Adding magical effects...",
+              "Finalizing your animation...",
+            ]}
+            title="🎬 Creating Animation"
+            subtitle="Your artwork is coming to life"
+          />
+        );
       case "outline-failed":
         return (
           <OutlineFailedScreen
@@ -601,6 +611,7 @@ const FamilyArtApp = () => {
         return (
           <FinalResultScreen
             onRestart={handleRestart}
+            onCreateAnotherAnimation={handleGoToGenerateNew}
             animationUrl={familyData.animation}
           />
         );
@@ -615,9 +626,9 @@ const FamilyArtApp = () => {
   };
 
   return (
-    <main className="bg-black text-neutral-200 min-h-screen w-full flex flex-col items-center justify-center p-4 pb-24 overflow-y-auto relative">
+    <main className="bg-black text-neutral-200 min-h-screen w-full flex flex-col items-center justify-center p-4 pb-24 relative">
       <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05]"></div>
-      <div className="z-10 flex flex-col items-center justify-center w-full h-full flex-1 min-h-0">
+      <div className="z-10 flex flex-col items-center justify-center w-full flex-1">
         {renderCurrentStep()}
       </div>
     </main>
