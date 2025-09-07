@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { Search } from "lucide-react";
 import ArtworkViewer from "@/components/ArtworkViewer";
+import FloatingPolaroidPairs from "@/components/FloatingPolaroidPairs";
 
 interface SubmissionData {
   submission: {
@@ -32,6 +32,28 @@ export default function ViewPage() {
   const [submissionData, setSubmissionData] = useState<SubmissionData | null>(
     null
   );
+  const [recentSubmissions, setRecentSubmissions] = useState<any[]>([]);
+  const [loadingRecent, setLoadingRecent] = useState(true);
+
+  // Load recent submissions for background
+  useEffect(() => {
+    const loadRecentSubmissions = async () => {
+      try {
+        const response = await fetch("/api/get-recent-submissions");
+        const data = await response.json();
+
+        if (response.ok) {
+          setRecentSubmissions(data.submissions || []);
+        }
+      } catch (err) {
+        console.error("Failed to load recent submissions:", err);
+      } finally {
+        setLoadingRecent(false);
+      }
+    };
+
+    loadRecentSubmissions();
+  }, []);
 
   const handleSearch = async () => {
     if (!queueNumber.trim()) {
@@ -79,18 +101,23 @@ export default function ViewPage() {
   }
 
   return (
-    <div className="relative flex flex-col items-center justify-center w-full h-screen bg-black bg-grid-white/[0.05]">
+    <div className="relative flex flex-col items-center justify-center w-full h-screen bg-black bg-grid-white/[0.05] overflow-hidden">
+      {/* Floating Polaroid Pairs Background */}
+      {!loadingRecent && recentSubmissions.length > 0 && (
+        <FloatingPolaroidPairs submissions={recentSubmissions} />
+      )}
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="text-center mb-8"
+        className="text-center mb-8 relative z-10"
       >
-        <h1 className="text-4xl sm:text-6xl md:text-8xl font-caveat font-bold text-neutral-100 mb-4">
+        <h1 className="text-4xl sm:text-6xl md:text-8xl font-caveat font-bold text-neutral-100 mb-4 drop-shadow-2xl">
           🔍 View Artwork
         </h1>
-        <p className="font-permanent-marker text-neutral-300 text-xl tracking-wide">
+        <p className="font-permanent-marker text-neutral-300 text-xl tracking-wide drop-shadow-lg">
           Enter your queue number to view your creation
         </p>
       </motion.div>
@@ -100,7 +127,7 @@ export default function ViewPage() {
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.3, duration: 0.8, type: "spring" }}
-        className="w-full max-w-md space-y-6"
+        className="w-full max-w-md space-y-6 relative z-10"
       >
         <div className="relative">
           <input
@@ -108,7 +135,7 @@ export default function ViewPage() {
             value={queueNumber}
             onChange={(e) => setQueueNumber(e.target.value)}
             placeholder="Enter queue number (e.g., 10001)"
-            className="w-full px-6 py-4 text-xl font-permanent-marker text-center bg-white/10 backdrop-blur-sm border-2 border-white/30 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:border-yellow-400 focus:bg-white/20 transition-all duration-300"
+            className="w-full px-6 py-4 text-xl font-permanent-marker text-center bg-black/40 backdrop-blur-md border-2 border-white/50 rounded-lg text-white placeholder-neutral-300 focus:outline-none focus:border-yellow-400 focus:bg-black/60 transition-all duration-300 shadow-2xl"
             onKeyPress={(e) => e.key === "Enter" && handleSearch()}
           />
         </div>
@@ -127,7 +154,7 @@ export default function ViewPage() {
           <button
             onClick={handleSearch}
             disabled={isLoading}
-            className="primary-button disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            className="w-full primary-button disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
             {isLoading ? (
               <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin mr-2" />
@@ -137,13 +164,13 @@ export default function ViewPage() {
             {isLoading ? "Searching..." : "View Artwork"}
           </button>
 
-          <Link
+          {/* <Link
             href="/"
             className="secondary-button flex items-center justify-center"
           >
             <ArrowLeft className="w-6 h-6 mr-2" />
             Back to Home
-          </Link>
+          </Link> */}
         </div>
       </motion.div>
 
