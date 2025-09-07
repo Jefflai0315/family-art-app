@@ -103,7 +103,6 @@ export async function GET(request: NextRequest) {
       downloadUrl: task.downloadUrl,
       cloudinaryVideoUrl: task.cloudinaryVideoUrl,
       cloudinaryImageUrl: task.cloudinaryImageUrl,
-      imageUrl: task.imageUrl,
       prompt: task.prompt,
       familyArtId: task.familyArtId,
       createdAt: task.createdAt,

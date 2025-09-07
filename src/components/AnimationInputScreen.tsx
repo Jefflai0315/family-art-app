@@ -126,7 +126,7 @@ const AnimationInputScreen = ({
           >
             <motion.button
               onClick={handleRetrieve}
-              className={`secondary-button w-full${
+              className={`secondary-button w-full ${
                 queueNumber.trim() === ""
                   ? "cursor-not-allowed"
                   : "cursor-pointer"
@@ -195,7 +195,7 @@ const AnimationInputScreen = ({
                 <div className="space-y-4">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
-                    className="cursor-pointer"
+                    className="cursor-pointer flex justify-center"
                   >
                     <PolaroidCard
                       caption="Click to Upload"

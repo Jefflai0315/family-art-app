@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     // Save submission to MongoDB
     const submission = {
       originalPhotoUrl: cloudinaryPhotoUrl,
-      generatedOutlineUrl: outlineUrl,
+      generatedOutlineUrl: outlineUrl.secure_url,
       queueNumber,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       success: true,
       submissionId,
       queueNumber,
-      outlineUrl,
+      outlineUrl: outlineUrl.secure_url,
       source: "gemini",
     });
   } catch (error) {
