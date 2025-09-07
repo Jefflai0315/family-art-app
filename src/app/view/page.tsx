@@ -32,7 +32,22 @@ export default function ViewPage() {
   const [submissionData, setSubmissionData] = useState<SubmissionData | null>(
     null
   );
-  const [recentSubmissions, setRecentSubmissions] = useState<any[]>([]);
+  const [recentSubmissions, setRecentSubmissions] = useState<
+    {
+      queueNumber: string;
+      cloudinaryImageUrl?: string;
+      cloudinaryVideoUrl?: string;
+      createdAt: string;
+      status: string;
+      animations: Array<{
+        taskId: string;
+        status: string;
+        cloudinaryVideoUrl?: string;
+        cloudinaryImageUrl?: string;
+        createdAt: string;
+      }>;
+    }[]
+  >([]);
   const [loadingRecent, setLoadingRecent] = useState(true);
 
   // Load recent submissions for background
