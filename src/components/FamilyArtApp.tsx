@@ -35,7 +35,6 @@ interface Animation {
   downloadUrl?: string;
   cloudinaryVideoUrl?: string;
   cloudinaryImageUrl?: string;
-  imageUrl?: string;
   prompt?: string;
   familyArtId: string;
   createdAt: string;
@@ -115,7 +114,9 @@ const FamilyArtApp = () => {
                     setFamilyData((prev) => ({
                       ...prev,
                       outline: result.outlineUrl,
+                      queueNumber: result.queueNumber,
                     }));
+                    setCurrentQueueNumber(result.queueNumber);
                     console.log(
                       "Outline generated successfully:",
                       result.source
@@ -477,7 +478,7 @@ const FamilyArtApp = () => {
             generatedOutline={familyData.outline}
             queueNumber={familyData.queueNumber || "00000"}
             aspectRatio={familyData.aspectRatio}
-            onProceed={() => setCurrentStep("queue-ready")}
+            onProceed={() => setCurrentStep("animation-input")}
             onRegenerate={handleRegenerateOutline}
             onBack={() => setCurrentStep("capture")}
           />
