@@ -1,15 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  ArrowLeft,
-  Download,
-  Share2,
-  Play,
-  Pause,
-  RotateCcw,
-} from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { ArrowLeft, Download, Share2, QrCode } from "lucide-react";
+import QRCode from "qrcode";
 import PolaroidCard from "./PolaroidCard";
 
 interface Submission {
@@ -45,11 +39,57 @@ const ArtworkViewer = ({
     "original" | "outline" | "animation"
   >("original");
   const [currentAnimationIndex, setCurrentAnimationIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+  const [isDesktop, setIsDesktop] = useState(false);
 
   const successfulAnimations = animations.filter(
     (anim) => anim.status === "success" && anim.cloudinaryVideoUrl
   );
+
+  // Detect desktop and generate QR code
+  useEffect(() => {
+    const checkIsDesktop = () => {
+      setIsDesktop(window.innerWidth >= 768); // md breakpoint
+    };
+
+    checkIsDesktop();
+    window.addEventListener("resize", checkIsDesktop);
+
+    return () => window.removeEventListener("resize", checkIsDesktop);
+  }, []);
+
+  // Generate QR code for current content
+  useEffect(() => {
+    const generateQRCode = async () => {
+      if (!isDesktop) return;
+
+      try {
+        const currentUrl = getCurrentVideoUrl() || getCurrentImageUrl();
+        if (currentUrl) {
+          const qrCodeDataURL = await QRCode.toDataURL(currentUrl, {
+            width: 200,
+            margin: 2,
+            color: {
+              dark: "#000000",
+              light: "#FFFFFF",
+            },
+          });
+          setQrCodeUrl(qrCodeDataURL);
+        }
+      } catch (error) {
+        console.error("Error generating QR code:", error);
+      }
+    };
+
+    generateQRCode();
+  }, [
+    isDesktop,
+    currentView,
+    currentAnimationIndex,
+    submission,
+    successfulAnimations,
+  ]);
 
   const downloadVideo = async (url: string, filename: string) => {
     try {
@@ -330,6 +370,30 @@ const ArtworkViewer = ({
           />
         ))}
       </div>
+
+      {/* Fixed QR Code at Bottom for Desktop */}
+      {isDesktop && qrCodeUrl && (
+        <motion.div
+          initial={{ opacity: 0, y: 100 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8, duration: 0.6 }}
+          className="fixed bottom-4 right-0 transform -translate-x-1/2 z-50"
+        >
+          <div className="bg-white p-3 rounded-lg shadow-2xl border-2 border-gray-200">
+            <div className="flex items-center gap-2 mb-2">
+              <QrCode className="w-4 h-4 text-gray-600" />
+              <span className="font-permanent-marker text-gray-700 text-xs">
+                Scan to download
+              </span>
+            </div>
+            <img
+              src={qrCodeUrl}
+              alt="QR Code for download"
+              className="w-24 h-24 mx-auto"
+            />
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 };

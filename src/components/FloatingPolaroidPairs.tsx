@@ -82,7 +82,7 @@ const FloatingPolaroidPairs = ({ submissions }: FloatingPolaroidPairsProps) => {
             }}
             animate={{
               opacity: 0.8,
-              scale: 0.8,
+              scale: 0.7,
               rotate: position.rotate,
               y: 0,
             }}
@@ -107,14 +107,25 @@ const FloatingPolaroidPairs = ({ submissions }: FloatingPolaroidPairsProps) => {
                 ease: "easeInOut",
               }}
             >
-              <PolaroidCard
-                caption={`#${submission.queueNumber}`}
-                status="done"
-                imageUrl={submission.cloudinaryImageUrl}
-                isMobile={true}
-                className="w-48 md:w-56"
-                aspectRatio="4:3"
-              />
+              <motion.div
+                animate={{
+                  scale: [1, 1.05, 1],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              >
+                <PolaroidCard
+                  caption={`#${submission.queueNumber}`}
+                  status="done"
+                  imageUrl={submission.cloudinaryImageUrl}
+                  isMobile={true}
+                  className="w-32 sm:w-48 md:w-64 lg:w-80 xl:w-96"
+                  aspectRatio="4:3"
+                />
+              </motion.div>
             </motion.div>
 
             {/* Animation Polaroid (if available) */}
@@ -136,15 +147,26 @@ const FloatingPolaroidPairs = ({ submissions }: FloatingPolaroidPairsProps) => {
                   delay: 0.5,
                 }}
               >
-                <PolaroidCard
-                  caption="Animation"
-                  status="done"
-                  imageUrl={submission.cloudinaryImageUrl}
-                  videoUrl={submission.cloudinaryVideoUrl}
-                  isMobile={true}
-                  className="w-48 md:w-56"
-                  aspectRatio="4:3"
-                />
+                <motion.div
+                  animate={{
+                    scale: [1, 1.03, 1],
+                  }}
+                  transition={{
+                    duration: 3.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: 0.5,
+                  }}
+                >
+                  <PolaroidCard
+                    caption="Animation"
+                    status="done"
+                    videoUrl={submission.cloudinaryVideoUrl}
+                    isMobile={true}
+                    className="w-32 sm:w-48 md:w-64 lg:w-80 xl:w-96"
+                    aspectRatio="4:3"
+                  />
+                </motion.div>
               </motion.div>
             )}
           </motion.div>
