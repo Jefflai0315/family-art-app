@@ -121,47 +121,6 @@ const FamilyArtApp = () => {
                       result.source
                     );
                     outlineGenerated = true;
-
-                    // Save submission to MongoDB after successful generation
-                    try {
-                      const saveResponse = await fetch("/api/save-submission", {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                          originalPhoto: currentPhoto,
-                          generatedOutline: result.outlineUrl,
-                        }),
-                      });
-
-                      if (saveResponse.ok) {
-                        const saveResult = await saveResponse.json();
-                        console.log(
-                          "Submission saved successfully:",
-                          saveResult.submissionId
-                        );
-                        // Update family data with the saved URLs and queue number
-                        setFamilyData((prev) => ({
-                          ...prev,
-                          id: saveResult.submissionId.toString(),
-                          queueNumber: saveResult.queueNumber,
-                        }));
-                        console.log(
-                          "Queue number assigned:",
-                          saveResult.queueNumber
-                        );
-                      } else {
-                        const errorData = await saveResponse.json();
-                        console.error(
-                          "Failed to save submission:",
-                          saveResponse.status,
-                          errorData
-                        );
-                      }
-                    } catch (saveError) {
-                      console.error("Error saving submission:", saveError);
-                    }
                   } else {
                     console.error("Failed to generate outline:", result.error);
                   }

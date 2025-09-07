@@ -82,19 +82,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Call Gemini API to generate outline
-    const outlineUrl = await generateOutlineWithGemini(
-      photoData,
-      GEMINI_API_KEY
-    );
+    const outline = await generateOutlineWithGemini(photoData, GEMINI_API_KEY);
 
-    if (!outlineUrl) {
+    if (!outline) {
       throw new Error("Failed to generate outline with Gemini API");
     }
 
+    const outlineUrl = await uploadToCloudinary(outline, "image");
+
     // Save submission to MongoDB
     const submission = {
-      originalPhoto: cloudinaryPhotoUrl,
-      generatedOutline: outlineUrl,
+      originalPhotoUrl: cloudinaryPhotoUrl,
+      generatedOutlineUrl: outlineUrl,
       queueNumber,
       createdAt: new Date(),
       updatedAt: new Date(),

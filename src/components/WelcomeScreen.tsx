@@ -84,18 +84,32 @@ const WelcomeScreen = ({ onStart, onSubmitArtwork }: WelcomeScreenProps) => {
           />
         </motion.button>
 
-        {/* Secondary action button */}
-        <motion.button
-          onClick={onSubmitArtwork}
-          className="secondary-button"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 3.6, duration: 0.6 }}
-          whileHover={{ scale: 1.05, rotate: 2 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          Submit Finished Artwork
-        </motion.button>
+        {/* Secondary action buttons */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <motion.button
+            onClick={onSubmitArtwork}
+            className="secondary-button"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 3.6, duration: 0.6 }}
+            whileHover={{ scale: 1.05, rotate: 2 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Submit Finished Artwork
+          </motion.button>
+
+          <motion.a
+            href="/view"
+            className="secondary-button"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 3.8, duration: 0.6 }}
+            whileHover={{ scale: 1.05, rotate: -2 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            View Existing Artwork
+          </motion.a>
+        </div>
       </motion.div>
     </div>
   );
