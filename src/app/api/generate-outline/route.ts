@@ -3,6 +3,8 @@ import { MongoClient, Db } from "mongodb";
 import cloudinary from "cloudinary";
 import { config } from "@/lib/config";
 import { GoogleGenAI } from "@google/genai";
+import { getServerSession } from "next-auth";
+import { getCreditManager } from "@/lib/credits";
 
 // Configure Cloudinary
 cloudinary.v2.config({
@@ -37,6 +39,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Check authentication
+  const session = await getServerSession();
+  console.log("Session:", session);
+  if (!session?.user?.email) {
+    return NextResponse.json(
+      { error: "Authentication required" },
+      { status: 401 }
+    );
+  }
+
   let client: MongoClient | null = null;
 
   try {
@@ -62,6 +74,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing photoData" }, { status: 400 });
     }
 
+    // Check if user has enough credits
+    const creditManager = await getCreditManager();
+    const hasCredits = await creditManager.hasEnoughCredits(
+      session.user.email,
+      1
+    );
+
+    if (!hasCredits) {
+      return NextResponse.json(
+        {
+          error:
+            "Insufficient credits. You need at least 1 credit to generate an outline.",
+          credits: await creditManager.getCredits(session.user.email),
+        },
+        { status: 402 }
+      ); // 402 Payment Required
+    }
+
+    // Deduct credits before processing
+    const creditDeducted = await creditManager.deductCredits(
+      session.user.email,
+      1,
+      "Outline generation"
+    );
+    if (!creditDeducted) {
+      return NextResponse.json(
+        { error: "Failed to deduct credits" },
+        { status: 500 }
+      );
+    }
+
     await client.connect();
     const db = client.db("bazgym");
     const submissionsCollection = db.collection("photo-submission");
@@ -85,6 +128,12 @@ export async function POST(request: NextRequest) {
     const outline = await generateOutlineWithGemini(photoData, GEMINI_API_KEY);
 
     if (!outline) {
+      // Refund credits if outline generation fails
+      await creditManager.refundCredits(
+        session.user.email,
+        1,
+        "Failed outline generation refund"
+      );
       throw new Error("Failed to generate outline with Gemini API");
     }
 
@@ -113,6 +162,16 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     try {
+      // Refund credits if there was an error after deduction
+      if (session?.user?.id) {
+        const creditManager = await getCreditManager();
+        await creditManager.refundCredits(
+          session.user.email,
+          1,
+          "Error during outline generation refund"
+        );
+      }
+
       if (client) {
         await client.close();
       }

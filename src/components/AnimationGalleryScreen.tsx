@@ -10,7 +10,6 @@ interface Animation {
   downloadUrl?: string;
   cloudinaryVideoUrl?: string;
   cloudinaryImageUrl?: string;
-  imageUrl?: string;
   prompt?: string;
   familyArtId: string;
   createdAt: string;

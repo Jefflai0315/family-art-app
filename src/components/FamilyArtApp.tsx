@@ -11,11 +11,11 @@ import QueueNumberInputScreen from "./QueueNumberInputScreen";
 import ArtworkScanScreen from "./ArtworkScanScreen";
 import AnimationInputScreen from "./AnimationInputScreen";
 import AnimationGalleryScreen from "./AnimationGalleryScreen";
-import EnhancingScreen from "./EnhancingScreen";
 import FinalResultScreen from "./FinalResultScreen";
 import OutlineFailedScreen from "./OutlineFailedScreen";
 import AnimationFailedScreen from "./AnimationFailedScreen";
 import OutlinePreviewScreen from "./OutlinePreviewScreen";
+import UserProfile from "./UserProfile";
 import { config } from "../lib/config";
 
 interface FamilyData {
@@ -588,6 +588,12 @@ const FamilyArtApp = () => {
   return (
     <main className="bg-black text-neutral-200 min-h-screen w-full flex flex-col items-center justify-center p-4 pb-24 relative">
       <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05]"></div>
+
+      {/* User Profile - Top Right */}
+      <div className="absolute top-4 right-4 z-20">
+        <UserProfile />
+      </div>
+
       <div className="z-10 flex flex-col items-center justify-center w-full flex-1">
         {renderCurrentStep()}
       </div>

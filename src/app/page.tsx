@@ -5,7 +5,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function Home() {
   return (
-    <ProtectedRoute requireCredits={true} minCredits={1}>
+    <ProtectedRoute requireCredits={false}>
       <FamilyArtApp />
     </ProtectedRoute>
   );

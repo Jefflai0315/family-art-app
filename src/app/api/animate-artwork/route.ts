@@ -3,6 +3,8 @@ import { MongoClient } from "mongodb";
 import cloudinary from "cloudinary";
 import { videoPrompts } from "@/app/utils/constants";
 import { config } from "../../../lib/config";
+import { getServerSession } from "next-auth";
+import { getCreditManager } from "@/lib/credits";
 
 // Environment variables and client will be created when the function is called
 
@@ -54,6 +56,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Check authentication
+  const session = await getServerSession();
+  if (!session?.user?.email) {
+    return NextResponse.json(
+      { error: "Authentication required" },
+      { status: 401 }
+    );
+  }
+
   // Declare client variable outside try block so it's accessible in catch
   let client: MongoClient | null = null;
 
@@ -80,6 +91,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Missing imageUrl or familyArtId" },
         { status: 400 }
+      );
+    }
+
+    // Check if user has enough credits
+    const creditManager = await getCreditManager();
+    const hasCredits = await creditManager.hasEnoughCredits(
+      session.user.email,
+      1
+    );
+
+    if (!hasCredits) {
+      return NextResponse.json(
+        {
+          error:
+            "Insufficient credits. You need at least 1 credit to generate an animation.",
+          credits: await creditManager.getCredits(session.user.email),
+        },
+        { status: 402 }
+      ); // 402 Payment Required
+    }
+
+    // Deduct credits before processing
+    const creditDeducted = await creditManager.deductCredits(
+      session.user.email,
+      1,
+      "Animation generation"
+    );
+    if (!creditDeducted) {
+      return NextResponse.json(
+        { error: "Failed to deduct credits" },
+        { status: 500 }
       );
     }
 
@@ -152,8 +194,13 @@ export async function POST(request: NextRequest) {
       { $set: { status, updatedAt: new Date(), errorMessage, requestId } }
     );
 
-    // If failed, return
+    // If failed, refund credits and return
     if (status === "failed") {
+      await creditManager.refundCredits(
+        session.user.email,
+        1,
+        "Failed animation generation refund"
+      );
       return NextResponse.json(
         { success: false, taskId, error: errorMessage },
         { status: 500 }
@@ -198,6 +245,12 @@ export async function POST(request: NextRequest) {
       } else if (pollStatus === "failed") {
         errorMessage = pollData.data.error || "WavespeedAI task failed";
         status = "failed";
+        // Refund credits for failed animation
+        await creditManager.refundCredits(
+          session.user.email,
+          1,
+          "Failed animation generation refund"
+        );
         break;
       }
 
@@ -291,6 +344,12 @@ export async function POST(request: NextRequest) {
         cloudinaryImageUrl,
       });
     } else {
+      // Refund credits for failed animation
+      await creditManager.refundCredits(
+        session.user.email,
+        1,
+        "Failed animation generation refund"
+      );
       return NextResponse.json(
         { success: false, taskId, error: errorMessage },
         { status: 500 }
@@ -298,6 +357,16 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     try {
+      // Refund credits if there was an error after deduction
+      if (session?.user?.id) {
+        const creditManager = await getCreditManager();
+        await creditManager.refundCredits(
+          session.user.email,
+          1,
+          "Error during animation generation refund"
+        );
+      }
+
       if (client) {
         await client.close();
       }
