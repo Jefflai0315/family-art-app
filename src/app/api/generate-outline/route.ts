@@ -41,7 +41,6 @@ export async function POST(request: NextRequest) {
 
   // Check authentication
   const session = await getServerSession();
-  console.log("Session:", session);
   if (!session?.user?.email) {
     return NextResponse.json(
       { error: "Authentication required" },

@@ -19,7 +19,7 @@ interface PolaroidCardProps {
   error?: string;
   dragConstraintsRef?: React.RefObject<HTMLElement>;
   onShake?: (caption: string) => void;
-  onDownload?: (caption: string) => void;
+  onDownload?: (url: string, caption: string) => Promise<void> | void;
   onAction?: () => void;
   isMobile?: boolean;
   className?: string;
@@ -213,9 +213,12 @@ const PolaroidCard: React.FC<PolaroidCardProps> = ({
             >
               {onDownload && (
                 <button
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.stopPropagation(); // Prevent drag from starting on click
-                    onDownload(caption);
+                    const url = videoUrl || imageUrl;
+                    if (url && onDownload) {
+                      await onDownload(url, caption);
+                    }
                   }}
                   className="p-2 bg-black/50 rounded-full text-white hover:bg-black/75 focus:outline-none focus:ring-2 focus:ring-white"
                   aria-label={`Download ${

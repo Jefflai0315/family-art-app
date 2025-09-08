@@ -349,7 +349,7 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
             minWidth={200}
             minHeight={150}
             keepSelection
-            className="max-w-full max-h-full"
+            className="max-w-full max-h-full  "
             renderSelectionAddon={() => (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="text-center text-white">
@@ -371,7 +371,6 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
               alt="Uploaded photo"
               className="max-w-full max-h-full object-contain"
               style={{
-                maxHeight: "65dvh",
                 transform: `rotate(${rotation}deg)`,
                 transition: "transform 0.3s ease-in-out",
               }}

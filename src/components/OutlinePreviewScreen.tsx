@@ -4,6 +4,7 @@ import React, { useRef } from "react";
 import { motion } from "framer-motion";
 import { Download, RefreshCw, ArrowLeft, CheckCircle } from "lucide-react";
 import PolaroidCard from "./PolaroidCard";
+import { downloadImage } from "@/lib/downloadUtils";
 
 interface OutlinePreviewScreenProps {
   originalPhoto: string | null;
@@ -26,27 +27,20 @@ const OutlinePreviewScreen: React.FC<OutlinePreviewScreenProps> = ({
 }) => {
   const dragAreaRef = useRef<HTMLDivElement>(null);
 
-  const handleDownload = () => {
-    if (!generatedOutline) return;
-
-    // Create a temporary anchor element to trigger download
-    const link = document.createElement("a");
-    link.href = generatedOutline;
-    link.download = `coloring-outline-${queueNumber || "outline"}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async (url: string, caption: string) => {
+    try {
+      if (caption === "Your Outline") {
+        await downloadImage(
+          url,
+          `coloring-outline-${queueNumber || "outline"}`
+        );
+      } else {
+        await downloadImage(url, caption.toLowerCase().replace(/\s+/g, "-"));
+      }
+    } catch (error) {
+      console.error("Error downloading image:", error);
+    }
   };
-
-  // Pre-defined positions for scattered polaroids
-  const POSITIONS = [
-    { top: "5%", left: "10%", rotate: -8 },
-    { top: "15%", left: "60%", rotate: 5 },
-    { top: "45%", left: "5%", rotate: 3 },
-    { top: "2%", left: "35%", rotate: 10 },
-    { top: "40%", left: "70%", rotate: -12 },
-    { top: "50%", left: "38%", rotate: -3 },
-  ];
 
   return (
     <div className="relative flex flex-col items-center justify-center w-full h-full flex-1 min-h-0">
@@ -205,7 +199,9 @@ const OutlinePreviewScreen: React.FC<OutlinePreviewScreenProps> = ({
         </motion.button>
 
         <motion.button
-          onClick={handleDownload}
+          onClick={() =>
+            generatedOutline && handleDownload(generatedOutline, "Your Outline")
+          }
           disabled={!generatedOutline}
           className="primary-button disabled:opacity-50 disabled:cursor-not-allowed"
           whileHover={{ scale: 1.05, rotate: -2 }}
