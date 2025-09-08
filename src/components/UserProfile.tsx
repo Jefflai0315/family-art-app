@@ -1,13 +1,23 @@
 "use client";
 
 import { useSession, signOut, signIn } from "next-auth/react";
-import { Coins, User, LogOut, Settings, LogIn } from "lucide-react";
-import { useState } from "react";
+import { Coins, User, LogOut, LogIn, AlertCircle } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import { handleApiCall } from "@/lib/errorHandling";
+
+interface CreditsResponse {
+  success: boolean;
+  credits?: number;
+  error?: string;
+}
 
 export default function UserProfile() {
   const { data: session } = useSession();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [credits, setCredits] = useState<number | null>(null);
+  const [creditsError, setCreditsError] = useState<string | null>(null);
+  const [isLoadingCredits, setIsLoadingCredits] = useState(false);
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/auth/signin" });
@@ -16,6 +26,56 @@ export default function UserProfile() {
   const handleSignIn = () => {
     signIn("google", { callbackUrl: "/" });
   };
+
+  const fetchCredits = useCallback(async () => {
+    if (!session?.user?.email) return;
+
+    setIsLoadingCredits(true);
+    setCreditsError(null);
+
+    try {
+      const { data, error } = await handleApiCall<CreditsResponse>(async () => {
+        return fetch("/api/get-credits", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+      });
+
+      if (error) {
+        if (error.type === "auth") {
+          setCreditsError("Please sign in to view credits");
+        } else if (error.type === "credits") {
+          setCreditsError("Unable to load credits");
+        } else {
+          setCreditsError("Error loading credits");
+        }
+        setCredits(null);
+      } else if (data?.success) {
+        setCredits(data.credits ?? null);
+        setCreditsError(null);
+      } else {
+        setCreditsError("Unable to load credits");
+        setCredits(null);
+      }
+    } catch {
+      setCreditsError("Error loading credits");
+      setCredits(null);
+    } finally {
+      setIsLoadingCredits(false);
+    }
+  }, [session?.user?.email]);
+
+  // Fetch credits when session changes
+  useEffect(() => {
+    if (session?.user?.email) {
+      fetchCredits();
+    } else {
+      setCredits(null);
+      setCreditsError(null);
+    }
+  }, [session?.user?.email, fetchCredits]);
 
   // Show sign in button if not authenticated
   if (!session?.user) {
@@ -42,7 +102,16 @@ export default function UserProfile() {
         {/* Credits Display */}
         <div className="flex items-center space-x-2 text-white">
           <Coins className="w-5 h-5" />
-          <span className="font-semibold">{session.user.credits}</span>
+          {isLoadingCredits ? (
+            <span className="font-semibold">...</span>
+          ) : creditsError ? (
+            <div className="flex items-center space-x-1">
+              <AlertCircle className="w-4 h-4 text-red-400" />
+              <span className="font-semibold text-red-400">Error</span>
+            </div>
+          ) : (
+            <span className="font-semibold">{credits ?? 0}</span>
+          )}
         </div>
 
         {/* User Avatar */}
@@ -99,33 +168,42 @@ export default function UserProfile() {
                 <span className="text-gray-700">Credits</span>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-purple-600">
-                  {session.user.credits}
-                </div>
-                <p className="text-xs text-gray-500">remaining</p>
+                {isLoadingCredits ? (
+                  <div className="text-2xl font-bold text-gray-400">...</div>
+                ) : creditsError ? (
+                  <div className="flex flex-col items-end">
+                    <div className="flex items-center space-x-1 text-red-500">
+                      <AlertCircle className="w-4 h-4" />
+                      <span className="text-sm font-medium">Error</span>
+                    </div>
+                    <button
+                      onClick={fetchCredits}
+                      className="text-xs text-purple-600 hover:text-purple-700 mt-1"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-purple-600">
+                      {credits ?? 0}
+                    </div>
+                    <p className="text-xs text-gray-500">remaining</p>
+                  </>
+                )}
               </div>
             </div>
           </div>
 
           {/* Actions */}
           <div className="px-6 py-4 space-y-2">
-            {/* <a
+            <a
               href="/credits"
-              className="w-full text-left px-3 py-2 rounded-xl hover:bg-purple-50 transition-colors flex items-center space-x-3 text-purple-600"
+              className="w-full text-left px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors flex items-center space-x-3 text-gray-700"
             >
               <Coins className="w-4 h-4" />
               <span>Add Credits</span>
-            </a> */}
-
-            {process.env.NODE_ENV === "development" && (
-              <a
-                href="/test-credits"
-                className="w-full text-left px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors flex items-center space-x-3 text-gray-700"
-              >
-                <Coins className="w-4 h-4" />
-                <span>Add Test Credits</span>
-              </a>
-            )}
+            </a>
 
             <button
               onClick={handleSignOut}

@@ -16,7 +16,31 @@ import OutlineFailedScreen from "./OutlineFailedScreen";
 import AnimationFailedScreen from "./AnimationFailedScreen";
 import OutlinePreviewScreen from "./OutlinePreviewScreen";
 import UserProfile from "./UserProfile";
+import ErrorDisplay from "./ErrorDisplay";
 import { config } from "../lib/config";
+import { useErrorHandling } from "../hooks/useErrorHandling";
+import { handleApiCall } from "../lib/errorHandling";
+import { signIn } from "next-auth/react";
+
+interface ApiResponse {
+  success?: boolean;
+  error?: string;
+  [key: string]: unknown;
+}
+
+interface GenerateOutlineResponse extends ApiResponse {
+  success: boolean;
+  outlineUrl?: string;
+  queueNumber?: string;
+  source?: string;
+}
+
+interface AnimationResponse extends ApiResponse {
+  success: boolean;
+  taskId?: string;
+  cloudinaryVideoUrl?: string;
+  downloadUrl?: string;
+}
 
 interface FamilyData {
   id: string | null;
@@ -60,9 +84,14 @@ const FamilyArtApp = () => {
   const [animations, setAnimations] = useState<Animation[]>([]);
   const [currentQueueNumber, setCurrentQueueNumber] = useState<string>("");
 
+  // Error handling
+  const { errorState, isRetrying, clearError, retry, handleApiError } =
+    useErrorHandling();
+
   const processPhoto = async (photoData?: string) => {
     setProcessing(true);
     setCurrentStep("processing");
+    clearError(); // Clear any previous errors
 
     try {
       // Step 1: Ensure image is fully ready (add delay for image processing)
@@ -89,73 +118,44 @@ const FamilyArtApp = () => {
           currentPhoto ? "Photo available" : "No photo"
         );
         if (currentPhoto) {
-          try {
-            // Add retry mechanism for better reliability
-            let retryCount = 0;
-            const maxRetries = 2;
-
-            while (retryCount < maxRetries && !outlineGenerated) {
-              try {
-                console.log(`Attempt ${retryCount + 1} to generate outline...`);
-
-                const response = await fetch("/api/generate-outline", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    photoData: currentPhoto,
-                  }),
-                });
-
-                if (response.ok) {
-                  const result = await response.json();
-                  if (result.success && result.outlineUrl) {
-                    setFamilyData((prev) => ({
-                      ...prev,
-                      outline: result.outlineUrl,
-                      queueNumber: result.queueNumber,
-                    }));
-                    setCurrentQueueNumber(result.queueNumber);
-                    console.log(
-                      "Outline generated successfully:",
-                      result.source
-                    );
-                    outlineGenerated = true;
-                  } else {
-                    console.error("Failed to generate outline:", result.error);
-                  }
-                } else {
-                  console.error("API request failed:", response.status);
-                }
-
-                if (!outlineGenerated && retryCount < maxRetries - 1) {
-                  console.log(
-                    `Retrying in 3 seconds... (attempt ${retryCount + 2})`
-                  );
-                  await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3 seconds before retry
-                }
-              } catch (apiError) {
-                console.error(
-                  `API call error on attempt ${retryCount + 1}:`,
-                  apiError
-                );
-                if (retryCount < maxRetries - 1) {
-                  console.log(
-                    `Retrying in 3 seconds... (attempt ${retryCount + 2})`
-                  );
-                  await new Promise((resolve) => setTimeout(resolve, 3000));
-                }
-              }
-
-              retryCount++;
+          const { data, error } = await handleApiCall<GenerateOutlineResponse>(
+            async () => {
+              return fetch("/api/generate-outline", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  photoData: currentPhoto,
+                }),
+              });
             }
+          );
 
-            if (!outlineGenerated) {
-              console.error("All retry attempts failed");
-            }
-          } catch (apiError) {
-            console.error("Error calling Gemini API:", apiError);
+          if (error) {
+            handleApiError(error);
+            setProcessing(false);
+            return;
+          }
+
+          if (data?.success && data.outlineUrl) {
+            setFamilyData((prev) => ({
+              ...prev,
+              outline: data.outlineUrl || null,
+              queueNumber: data.queueNumber || null,
+            }));
+            setCurrentQueueNumber(data.queueNumber || "");
+            console.log("Outline generated successfully:", data.source);
+            outlineGenerated = true;
+          } else {
+            console.error("Failed to generate outline:", data?.error);
+            handleApiError({
+              status: 500,
+              message: data?.error || "Failed to generate outline",
+              type: "server",
+            });
+            setProcessing(false);
+            return;
           }
         }
       } else {
@@ -201,7 +201,11 @@ const FamilyArtApp = () => {
     } catch (error) {
       console.error("Error processing photo:", error);
       setProcessing(false);
-      setCurrentStep("outline-failed");
+      handleApiError({
+        status: 500,
+        message: "An unexpected error occurred while processing your photo",
+        type: "server",
+      });
     }
   };
 
@@ -392,18 +396,18 @@ const FamilyArtApp = () => {
     queueNumber: string,
     imageData: string
   ) => {
-    try {
-      console.log("Generating animation for queue:", queueNumber);
-      setFamilyData((prev) => ({ ...prev, queueNumber }));
-      setArtworkData(imageData);
+    console.log("Generating animation for queue:", queueNumber);
+    setFamilyData((prev) => ({ ...prev, queueNumber }));
+    setArtworkData(imageData);
+    clearError(); // Clear any previous errors
 
-      // Show loading screen immediately
-      setCurrentStep("animation-processing");
-      setProcessing(true);
-      setProgress(0);
+    // Show loading screen immediately
+    setCurrentStep("animation-processing");
+    setProcessing(true);
+    setProgress(0);
 
-      // Call the animation API
-      const response = await fetch("/api/animate-artwork", {
+    const { data, error } = await handleApiCall<AnimationResponse>(async () => {
+      return fetch("/api/animate-artwork", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -415,37 +419,39 @@ const FamilyArtApp = () => {
           familyArtId: queueNumber,
         }),
       });
+    });
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          console.log("Animation submitted successfully:", result.taskId);
+    if (error) {
+      handleApiError(error);
+      setProcessing(false);
+      return;
+    }
 
-          // Simulate animation processing with progress updates
-          const totalSteps = 5;
-          for (let i = 0; i < totalSteps; i++) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            setProgress(((i + 1) / totalSteps) * 100);
-          }
+    if (data?.success) {
+      console.log("Animation submitted successfully:", data.taskId);
 
-          // Set the animation URL and move to enhancing screen
-          setFamilyData((prev) => ({
-            ...prev,
-            animation:
-              result.cloudinaryVideoUrl || result.downloadUrl || "placeholder",
-          }));
-
-          setProcessing(false);
-          setCurrentStep("final-result");
-        } else {
-          alert("Failed to generate animation. Please try again.");
-        }
-      } else {
-        alert("Failed to submit animation request. Please try again.");
+      // Simulate animation processing with progress updates
+      const totalSteps = 5;
+      for (let i = 0; i < totalSteps; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        setProgress(((i + 1) / totalSteps) * 100);
       }
-    } catch (error) {
-      console.error("Error generating animation:", error);
-      alert("An error occurred while generating animation. Please try again.");
+
+      // Set the animation URL and move to enhancing screen
+      setFamilyData((prev) => ({
+        ...prev,
+        animation: data.cloudinaryVideoUrl || data.downloadUrl || "placeholder",
+      }));
+
+      setProcessing(false);
+      setCurrentStep("final-result");
+    } else {
+      handleApiError({
+        status: 500,
+        message: data?.error || "Failed to generate animation",
+        type: "server",
+      });
+      setProcessing(false);
     }
   };
 
@@ -453,7 +459,40 @@ const FamilyArtApp = () => {
     setCurrentStep("animation-input");
   };
 
+  const handleRetry = async () => {
+    if (currentStep === "processing") {
+      await retry(() => processPhoto());
+    } else if (currentStep === "animation-processing") {
+      await retry(() =>
+        handleGenerateAnimation(familyData.queueNumber || "", artworkData || "")
+      );
+    }
+  };
+
+  const handleSignIn = () => {
+    signIn("google", { callbackUrl: "/" });
+  };
+
+  const handleAddCredits = () => {
+    // Navigate to credits page or show credits modal
+    window.location.href = "/credits";
+  };
+
   const renderCurrentStep = () => {
+    // Show error display if there's an error
+    if (errorState.hasError && errorState.error) {
+      return (
+        <ErrorDisplay
+          error={errorState.error}
+          onRetry={handleRetry}
+          onSignIn={handleSignIn}
+          onAddCredits={handleAddCredits}
+          retryCount={errorState.retryCount}
+          isRetrying={isRetrying}
+        />
+      );
+    }
+
     switch (currentStep) {
       case "welcome":
         return (
