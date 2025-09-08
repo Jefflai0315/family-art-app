@@ -12,7 +12,6 @@ interface AnimationTask {
   taskId: string;
   status: "queuing" | "processing" | "success" | "failed";
   downloadUrl?: string;
-  imageUrl: string;
   prompt?: string;
   model: string;
   duration: number;
@@ -134,7 +133,6 @@ export async function POST(request: NextRequest) {
     const initialTask: AnimationTask = {
       taskId: `wavespeedai_${Date.now()}`,
       status: "queuing",
-      imageUrl,
       prompt,
       model: "wavespeedai",
       duration: 5,
