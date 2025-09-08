@@ -142,7 +142,7 @@ export default function ViewPage() {
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.3, duration: 0.8, type: "spring" }}
-        className="w-full max-w-md space-y-6 relative z-10"
+        className=" p-4 w-full max-w-md space-y-6 relative z-10"
       >
         <div className="relative">
           <input
@@ -150,7 +150,7 @@ export default function ViewPage() {
             value={queueNumber}
             onChange={(e) => setQueueNumber(e.target.value)}
             placeholder="Enter queue number (e.g., 10001)"
-            className="w-full px-6 py-4 text-xl font-permanent-marker text-center bg-black/40 backdrop-blur-md border-2 border-white/50 rounded-lg text-white placeholder-neutral-300 focus:outline-none focus:border-yellow-400 focus:bg-black/60 transition-all duration-300 shadow-2xl"
+            className="w-full px-6 py-4 text-lg md:text-xl font-permanent-marker text-center bg-black/40 backdrop-blur-md border-2 border-white/50 rounded-lg text-white placeholder-neutral-300 focus:outline-none focus:border-yellow-400 focus:bg-black/60 transition-all duration-300 shadow-2xl"
             onKeyPress={(e) => e.key === "Enter" && handleSearch()}
           />
         </div>
