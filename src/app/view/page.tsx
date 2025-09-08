@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
+import { useSession } from "next-auth/react";
 import ArtworkViewer from "@/components/ArtworkViewer";
 import FloatingPolaroidPairs from "@/components/FloatingPolaroidPairs";
 
@@ -26,6 +27,7 @@ interface SubmissionData {
 }
 
 export default function ViewPage() {
+  const { data: session, status } = useSession();
   const [queueNumber, setQueueNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -53,12 +55,23 @@ export default function ViewPage() {
   // Load recent submissions for background
   useEffect(() => {
     const loadRecentSubmissions = async () => {
+      if (!session?.user?.email) {
+        setLoadingRecent(false);
+        return;
+      }
+
       try {
-        const response = await fetch("/api/get-recent-submissions");
+        const response = await fetch("/api/get-recent-submissions", {
+          headers: {
+            email: session.user.email,
+          },
+        });
         const data = await response.json();
 
         if (response.ok) {
           setRecentSubmissions(data.submissions || []);
+        } else {
+          console.error("Failed to load recent submissions:", data.error);
         }
       } catch (err) {
         console.error("Failed to load recent submissions:", err);
@@ -67,8 +80,10 @@ export default function ViewPage() {
       }
     };
 
-    loadRecentSubmissions();
-  }, []);
+    if (status !== "loading") {
+      loadRecentSubmissions();
+    }
+  }, [session?.user?.email, status]);
 
   const handleSearch = async () => {
     if (!queueNumber.trim()) {
@@ -104,6 +119,35 @@ export default function ViewPage() {
     setQueueNumber("");
     setError("");
   };
+
+  // Show loading while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center h-screen bg-black">
+        <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Show sign-in prompt if not authenticated
+  if (!session?.user) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-black bg-grid-white/[0.05]">
+        <h1 className="text-4xl font-caveat font-bold text-neutral-100 mb-4">
+          🔐 Authentication Required
+        </h1>
+        <p className="text-neutral-300 text-lg mb-8">
+          Please sign in to view artwork
+        </p>
+        <a
+          href="/api/auth/signin"
+          className="px-6 py-3 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-500 transition-colors"
+        >
+          Sign In
+        </a>
+      </div>
+    );
+  }
 
   if (submissionData) {
     return (
@@ -178,14 +222,6 @@ export default function ViewPage() {
             )}
             {isLoading ? "Searching..." : "View Artwork"}
           </button>
-
-          {/* <Link
-            href="/"
-            className="secondary-button flex items-center justify-center"
-          >
-            <ArrowLeft className="w-6 h-6 mr-2" />
-            Back to Home
-          </Link> */}
         </div>
       </motion.div>
 

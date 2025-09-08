@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { config } from "../../../lib/config";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   // Check if we should use real API or simulated mode
   if (config.isSimulated()) {
     return new Response(
@@ -20,6 +20,23 @@ export async function GET() {
   try {
     const client = await clientPromise;
     const db = client.db("bazgym");
+
+    const usersCollection = db.collection("users");
+    const currentUser = await usersCollection.findOne({
+      email: request.headers.get("email"),
+    });
+
+    console.log(currentUser);
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (currentUser.tier !== "admin" && currentUser.tier !== "pwp") {
+      return NextResponse.json(
+        { error: "Unauthorized, only pwp workers can access this endpoint" },
+        { status: 401 }
+      );
+    }
 
     // Get recent animations directly from anim-upload collection
     const animationCollection = db.collection("anim-upload");
