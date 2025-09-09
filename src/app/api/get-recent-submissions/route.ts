@@ -26,8 +26,6 @@ export async function GET(request: NextRequest) {
       email: request.headers.get("email"),
     });
 
-    console.log(currentUser);
-
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
