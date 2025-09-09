@@ -132,7 +132,7 @@ export default function UserProfile() {
 
       {/* Dropdown Menu */}
       {isDropdownOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-200 py-4 z-50">
+        <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-200 py-4 z-50">
           {/* User Info */}
           <div className="px-6 py-4 border-b border-gray-100">
             <div className="flex items-center space-x-3">
@@ -149,11 +149,11 @@ export default function UserProfile() {
                   <User className="w-6 h-6 text-white" />
                 </div>
               )}
-              <div className="w-full h-full flex flex-col justify-center whitespace-nowrap">
-                <h3 className="font-semibold text-gray-800">
+              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <h3 className="font-semibold text-gray-800 truncate">
                   {session.user.name || "User"}
                 </h3>
-                <p className="text-sm text-gray-600 w-full truncate overflow-hidden">
+                <p className="text-sm text-gray-600 truncate">
                   {session.user.email}
                 </p>
               </div>

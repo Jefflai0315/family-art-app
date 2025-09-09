@@ -633,7 +633,7 @@ const FamilyArtApp = () => {
         <UserProfile />
       </div>
 
-      <div className="z-10 flex flex-col items-center justify-center w-full flex-1">
+      <div className="z-10 flex flex-col items-center justify-center w-full flex-1 mt-20 sm:mt-0">
         {renderCurrentStep()}
       </div>
     </main>
