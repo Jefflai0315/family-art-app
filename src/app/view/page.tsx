@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import ArtworkViewer from "@/components/ArtworkViewer";
 import FloatingPolaroidPairs from "@/components/FloatingPolaroidPairs";
 
@@ -139,12 +140,12 @@ export default function ViewPage() {
         <p className="text-neutral-300 text-lg mb-8">
           Please sign in to view artwork
         </p>
-        <a
+        <Link
           href="/api/auth/signin"
           className="px-6 py-3 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-500 transition-colors"
         >
           Sign In
-        </a>
+        </Link>
       </div>
     );
   }
