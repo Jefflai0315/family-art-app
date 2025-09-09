@@ -378,10 +378,10 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
           </ReactCrop>
 
           {/* Bottom controls */}
-          <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
+          <div className="absolute bottom-4 left-2 right-2 flex justify-between items-center gap-2">
             <motion.button
               onClick={onBack}
-              className="bg-white/90 text-gray-800 px-6 py-3 rounded-full font-medium shadow-lg hover:bg-white transition-all flex items-center gap-2"
+              className="bg-white/90 text-gray-800 px-6 py-3 rounded-full text-xs font-medium shadow-lg hover:bg-white transition-all flex items-center gap-2"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -392,7 +392,7 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
             <motion.button
               onClick={handleCrop}
               disabled={!completedCrop}
-              className={`w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-xl transition-all duration-200 ${
+              className={`w-18 h-18 bg-white rounded-full flex items-center justify-center shadow-xl transition-all duration-200 ${
                 !completedCrop
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:scale-110 hover:shadow-2xl"
@@ -413,7 +413,7 @@ const CaptureScreen = ({ onPhotoCapture, onBack }: CaptureScreenProps) => {
 
             <motion.button
               onClick={handleReupload}
-              className="bg-white/90 text-gray-800 px-6 py-3 rounded-full font-medium shadow-lg hover:bg-white transition-all flex items-center gap-2"
+              className="bg-white/90 text-gray-800 px-6 py-3 rounded-full text-xs font-medium shadow-lg hover:bg-white transition-all flex items-center gap-2"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >

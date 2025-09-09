@@ -159,7 +159,7 @@ const ArtworkScanScreen = ({
         body: JSON.stringify({
           imageUrl: croppedImage,
           prompt:
-            "Bring this family artwork to life with gentle animation and flowing colors",
+            "Bring this artwork to life with gentle animation and flowing colors",
           familyArtId: queueNumber, // Using queue number as the family art ID
         }),
       });

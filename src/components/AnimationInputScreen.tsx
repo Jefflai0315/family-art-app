@@ -2,12 +2,25 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
+import {
+  ArrowLeft,
+  Settings,
+  Upload,
+  Crop,
+  RotateCcw,
+  RotateCw,
+} from "lucide-react";
+import ReactCrop, { Crop as CropType } from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
 import PolaroidCard from "./PolaroidCard";
 
 interface AnimationInputScreenProps {
   onRetrieveAnimations: (queueNumber: string) => void;
-  onGenerateAnimation: (queueNumber: string, imageData: string) => void;
+  onGenerateAnimation: (
+    queueNumber: string,
+    imageData: string,
+    prompt?: string
+  ) => void;
   onBack: () => void;
 }
 
@@ -20,6 +33,49 @@ const AnimationInputScreen = ({
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isRetrieving, setIsRetrieving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showAdvancedPrompt, setShowAdvancedPrompt] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [isCropping, setIsCropping] = useState(false);
+  const [rotation, setRotation] = useState(0);
+  const [cropPreset, setCropPreset] = useState<"4:3" | "1:1" | "16:9">("4:3");
+  const [crop, setCrop] = useState<CropType>({
+    unit: "%",
+    width: 70,
+    height: 52.5, // 4:3 aspect ratio (70 * 3/4 = 52.5)
+    x: 15,
+    y: 23.75,
+  });
+  const [completedCrop, setCompletedCrop] = useState<CropType>();
+  const [croppedImage, setCroppedImage] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Helper function to get crop dimensions based on preset
+  const getCropDimensions = (preset: "4:3" | "1:1" | "16:9") => {
+    switch (preset) {
+      case "4:3":
+        return { width: 70, height: 52.5, x: 15, y: 23.75 }; // 4:3 ratio, centered
+      case "1:1":
+        return { width: 60, height: 60, x: 20, y: 20 }; // Square, centered
+      case "16:9":
+        return { width: 75, height: 42.2, x: 12.5, y: 28.9 }; // 16:9 ratio, centered
+      default:
+        return { width: 70, height: 52.5, x: 15, y: 23.75 };
+    }
+  };
+
+  // Helper function to get aspect ratio from preset
+  const getAspectRatio = (preset: "4:3" | "1:1" | "16:9") => {
+    switch (preset) {
+      case "4:3":
+        return 4 / 3;
+      case "1:1":
+        return 1;
+      case "16:9":
+        return 16 / 9;
+      default:
+        return 4 / 3;
+    }
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -28,8 +84,104 @@ const AnimationInputScreen = ({
       reader.onload = (e) => {
         const result = e.target?.result as string;
         setUploadedImage(result);
+        setRotation(0); // Reset rotation for new image
+        // Reset crop to center of image with current preset
+        const dimensions = getCropDimensions(cropPreset);
+        setCrop({
+          unit: "%",
+          ...dimensions,
+        });
+        setIsCropping(true);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRotateLeft = () => {
+    setRotation((prev) => (prev - 90) % 360);
+  };
+
+  const handleRotateRight = () => {
+    setRotation((prev) => (prev + 90) % 360);
+  };
+
+  const handleCropPresetChange = (preset: "4:3" | "1:1" | "16:9") => {
+    setCropPreset(preset);
+    const dimensions = getCropDimensions(preset);
+    setCrop({
+      unit: "%",
+      ...dimensions,
+    });
+    setCompletedCrop(undefined);
+  };
+
+  const handleImageLoad = () => {
+    // Reset crop to center of the image with current preset
+    const dimensions = getCropDimensions(cropPreset);
+    setCrop({
+      unit: "%",
+      ...dimensions,
+    });
+  };
+
+  const getCroppedImg = (imageSrc: string, crop: CropType): Promise<string> => {
+    return new Promise((resolve) => {
+      const image = new Image();
+      image.src = imageSrc;
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+          resolve(imageSrc);
+          return;
+        }
+
+        // Get the actual displayed image element to calculate proper scaling
+        const imgElement = document.querySelector(
+          'img[src="' + imageSrc + '"]'
+        ) as HTMLImageElement;
+        if (!imgElement) {
+          resolve(imageSrc);
+          return;
+        }
+
+        // Calculate the actual scaling factors based on displayed vs natural dimensions
+        const scaleX = image.naturalWidth / imgElement.offsetWidth;
+        const scaleY = image.naturalHeight / imgElement.offsetHeight;
+
+        canvas.width = crop.width * scaleX;
+        canvas.height = crop.height * scaleY;
+
+        ctx.drawImage(
+          image,
+          crop.x * scaleX,
+          crop.y * scaleY,
+          crop.width * scaleX,
+          crop.height * scaleY,
+          0,
+          0,
+          crop.width * scaleX,
+          crop.height * scaleY
+        );
+
+        resolve(canvas.toDataURL("image/jpeg"));
+      };
+    });
+  };
+
+  const handleCropComplete = async () => {
+    if (uploadedImage && completedCrop) {
+      setIsProcessing(true);
+      try {
+        const croppedImg = await getCroppedImg(uploadedImage, completedCrop);
+        setCroppedImage(croppedImg);
+        setIsCropping(false);
+      } catch (error) {
+        console.error("Error cropping image:", error);
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -53,14 +205,18 @@ const AnimationInputScreen = ({
       return;
     }
 
-    if (!uploadedImage) {
-      alert("Please upload an image");
+    if (!croppedImage) {
+      alert("Please upload an image first");
       return;
     }
 
     setIsGenerating(true);
     try {
-      onGenerateAnimation(queueNumber.trim(), uploadedImage);
+      const prompt =
+        showAdvancedPrompt && customPrompt.trim()
+          ? customPrompt.trim()
+          : "Bring this artwork to life with gentle animation and flowing colors";
+      onGenerateAnimation(queueNumber.trim(), croppedImage, prompt);
     } finally {
       setIsGenerating(false);
     }
@@ -68,12 +224,189 @@ const AnimationInputScreen = ({
 
   const clearImage = () => {
     setUploadedImage(null);
+    setCroppedImage(null);
+    setIsCropping(false);
     // Reset file input
     const fileInput = document.querySelector(
       'input[type="file"]'
     ) as HTMLInputElement;
     if (fileInput) fileInput.value = "";
   };
+
+  const retakePhoto = () => {
+    setUploadedImage(null);
+    setCroppedImage(null);
+    setIsCropping(false);
+    setRotation(0);
+    const dimensions = getCropDimensions(cropPreset);
+    setCrop({
+      unit: "%",
+      ...dimensions,
+    });
+    setCompletedCrop(undefined);
+  };
+
+  // Show crop screen when cropping
+  if (isCropping && uploadedImage) {
+    return (
+      <div className="relative flex flex-col items-center justify-center w-full h-full flex-1 min-h-0">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-8"
+        >
+          <h1 className="text-6xl md:text-8xl font-caveat font-bold text-neutral-100 mb-4">
+            ✂️ Crop Your Artwork
+          </h1>
+          <p className="font-permanent-marker text-neutral-300 text-xl tracking-wide">
+            Adjust the crop area to focus on your finished artwork
+          </p>
+        </motion.div>
+
+        {/* Crop interface */}
+        <div className="relative w-full max-w-4xl h-[75dvh] mt-4 flex items-center justify-center">
+          {/* Crop preset controls */}
+          <div className="absolute top-4 left-4 z-10 flex gap-2">
+            {(["4:3", "1:1", "16:9"] as const).map((preset) => (
+              <motion.button
+                key={preset}
+                onClick={() => handleCropPresetChange(preset)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  cropPreset === preset
+                    ? "bg-white text-purple-600 shadow-lg"
+                    : "bg-black/50 text-white hover:bg-black/70"
+                }`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {preset}
+              </motion.button>
+            ))}
+          </div>
+
+          {/* Rotation controls */}
+          <div className="absolute top-4 right-4 z-10 flex gap-2">
+            <motion.button
+              onClick={handleRotateLeft}
+              className="bg-white/90 text-gray-800 p-3 rounded-full hover:bg-white shadow-lg transition-all"
+              whileHover={{ scale: 1.1, rotate: -5 }}
+              whileTap={{ scale: 0.9 }}
+              title="Rotate Left"
+            >
+              <RotateCcw className="w-5 h-5" />
+            </motion.button>
+            <motion.button
+              onClick={handleRotateRight}
+              className="bg-white/90 text-gray-800 p-3 rounded-full hover:bg-white shadow-lg transition-all"
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              whileTap={{ scale: 0.9 }}
+              title="Rotate Right"
+            >
+              <RotateCw className="w-5 h-5" />
+            </motion.button>
+          </div>
+
+          {/* Rotation indicator */}
+          {rotation !== 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute top-20 right-4 z-10 bg-white/90 text-gray-800 px-3 py-1 rounded-full text-sm font-medium shadow-lg"
+            >
+              {rotation > 0 ? `↻ ${rotation}°` : `↺ ${Math.abs(rotation)}°`}
+            </motion.div>
+          )}
+
+          <ReactCrop
+            key={cropPreset} // Force re-render when preset changes
+            crop={crop}
+            onChange={(c) => setCrop(c)}
+            onComplete={(c) => setCompletedCrop(c)}
+            aspect={getAspectRatio(cropPreset)}
+            minWidth={200}
+            minHeight={150}
+            keepSelection
+            className="max-w-full max-h-[65dvh]"
+            renderSelectionAddon={() => (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="text-center text-white">
+                  <div className="w-8 h-8 mx-auto mb-1 opacity-80 text-center text-lg">
+                    🎨
+                  </div>
+                  <p className="text-xs font-medium opacity-90">
+                    Position your artwork here
+                  </p>
+                  <p className="text-xs opacity-70 mt-1">{cropPreset} ratio</p>
+                </div>
+              </div>
+            )}
+          >
+            <img
+              src={uploadedImage}
+              alt="Uploaded artwork"
+              className="max-w-full max-h-[65dvh] object-contain"
+              style={{
+                transform: `rotate(${rotation}deg)`,
+                transition: "transform 0.3s ease-in-out",
+              }}
+              onLoad={handleImageLoad}
+            />
+          </ReactCrop>
+
+          {/* Bottom controls */}
+          <div className="absolute bottom-4 left-2 right-2 flex justify-between items-center gap-2">
+            <motion.button
+              onClick={retakePhoto}
+              className="bg-white/90 text-gray-800 px-6 py-3 rounded-full text-xs font-medium shadow-lg hover:bg-white transition-all flex items-center gap-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <ArrowLeft className="w-5 h-5" />
+              Back
+            </motion.button>
+
+            <motion.button
+              onClick={handleCropComplete}
+              disabled={!completedCrop || isProcessing}
+              className={`w-18 h-18 bg-white rounded-full flex items-center justify-center shadow-xl transition-all duration-200 ${
+                !completedCrop || isProcessing
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:scale-110 hover:shadow-2xl"
+              }`}
+              whileHover={completedCrop && !isProcessing ? { scale: 1.1 } : {}}
+              whileTap={completedCrop && !isProcessing ? { scale: 0.9 } : {}}
+            >
+              <div
+                className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
+                  completedCrop && !isProcessing
+                    ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                    : "bg-gray-300"
+                }`}
+              >
+                {isProcessing ? (
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Crop className="w-8 h-8 text-white" />
+                )}
+              </div>
+            </motion.button>
+
+            <motion.button
+              onClick={retakePhoto}
+              className="bg-white/90 text-gray-800 px-6 py-3 rounded-full text-xs font-medium shadow-lg hover:bg-white transition-all flex items-center gap-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Upload className="w-5 h-5" />
+              Reupload
+            </motion.button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex flex-col items-center justify-center w-full h-full flex-1 min-h-0">
@@ -155,7 +488,7 @@ const AnimationInputScreen = ({
               Upload Artwork (for new animation)
             </label>
             <div className="border-2 border-dashed border-neutral-600 rounded-lg p-6 text-center">
-              {uploadedImage ? (
+              {croppedImage ? (
                 <div className="space-y-4">
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
@@ -164,7 +497,32 @@ const AnimationInputScreen = ({
                     className="flex justify-center"
                   >
                     <PolaroidCard
-                      caption="Your Artwork"
+                      caption="Cropped Artwork"
+                      status="done"
+                      imageUrl={croppedImage}
+                      isMobile={true}
+                      className="w-64"
+                    />
+                  </motion.div>
+                  <motion.button
+                    onClick={clearImage}
+                    className="secondary-button"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Remove Image
+                  </motion.button>
+                </div>
+              ) : uploadedImage ? (
+                <div className="space-y-4">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5 }}
+                    className="flex justify-center"
+                  >
+                    <PolaroidCard
+                      caption="Ready to Crop"
                       status="done"
                       imageUrl={uploadedImage}
                       isMobile={true}
@@ -178,17 +536,6 @@ const AnimationInputScreen = ({
                     whileTap={{ scale: 0.95 }}
                   >
                     Remove Image
-                  </motion.button>
-                  {/* Generate Animation Polaroid */}
-                  <motion.button
-                    onClick={handleGenerate}
-                    className={`secondary-button w-full${
-                      queueNumber.trim() === ""
-                        ? "cursor-not-allowed"
-                        : "cursor-pointer"
-                    }`}
-                  >
-                    Generate New Animation
                   </motion.button>
                 </div>
               ) : (
@@ -226,6 +573,80 @@ const AnimationInputScreen = ({
             </div>
           </div>
         </motion.div>
+
+        {/* Advanced Prompt Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.0, duration: 0.6 }}
+          className="mb-8"
+        >
+          <div className="bg-neutral-800/50 backdrop-blur-sm rounded-lg p-6 border border-neutral-700">
+            <div className="flex items-center justify-between mb-4">
+              <label className="text-neutral-300 font-permanent-marker text-lg">
+                Animation Prompt
+              </label>
+              <button
+                onClick={() => setShowAdvancedPrompt(!showAdvancedPrompt)}
+                className="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300 transition-colors"
+              >
+                <Settings className="w-4 h-4" />
+                <span className="text-sm">
+                  {showAdvancedPrompt ? "Hide" : "Advanced"}
+                </span>
+              </button>
+            </div>
+
+            {showAdvancedPrompt ? (
+              <div className="space-y-4">
+                <textarea
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  placeholder="Enter your custom animation prompt (e.g., 'Make the colors dance and the characters wave gently')"
+                  className="w-full px-4 py-3 bg-neutral-900 border border-neutral-600 rounded-lg text-neutral-100 placeholder-neutral-400 focus:ring-2 focus:ring-yellow-400 focus:border-transparent font-permanent-marker text-sm resize-none"
+                  rows={3}
+                />
+                <p className="text-xs text-neutral-400">
+                  Leave empty to use the default prompt: &quot;Bring this
+                  artwork to life with gentle animation and flowing colors&quot;
+                </p>
+              </div>
+            ) : (
+              <div className="text-neutral-400 text-sm">
+                Using default prompt: &quot;Bring this artwork to life with
+                gentle animation and flowing colors&quot;
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Generate Animation Button */}
+        {croppedImage && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.1, duration: 0.6 }}
+            className="mb-8"
+          >
+            <motion.button
+              onClick={handleGenerate}
+              disabled={isGenerating || queueNumber.trim() === ""}
+              className={`w-full primary-button ${
+                queueNumber.trim() === "" || isGenerating
+                  ? "cursor-not-allowed opacity-50"
+                  : "cursor-pointer"
+              }`}
+              whileHover={{
+                scale: queueNumber.trim() !== "" && !isGenerating ? 1.05 : 1,
+              }}
+              whileTap={{
+                scale: queueNumber.trim() !== "" && !isGenerating ? 0.95 : 1,
+              }}
+            >
+              {isGenerating ? "Generating Animation..." : "Generate Animation"}
+            </motion.button>
+          </motion.div>
+        )}
 
         {/* Action Buttons */}
         <motion.div
