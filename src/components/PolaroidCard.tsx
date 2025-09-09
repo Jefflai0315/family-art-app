@@ -289,7 +289,6 @@ const PolaroidCard: React.FC<PolaroidCardProps> = ({
                     : "opacity-0"
                 }`}
                 onLoadedData={() => {
-                  console.log("Video loaded:", videoUrl);
                   setIsImageLoaded(true);
                 }}
                 onError={(e) => {

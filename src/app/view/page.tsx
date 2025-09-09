@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -163,6 +164,29 @@ export default function ViewPage() {
   return (
     <div className="relative flex flex-col items-center justify-center w-full h-screen bg-black bg-grid-white/[0.05] overflow-hidden">
       {/* Floating Polaroid Pairs Background */}
+      <div className="absolute top-0 z-20">
+        <div className="relative flex items-center gap-4">
+          <Image
+            src="/favicon.png"
+            alt="PWP Anim Logo"
+            width={56}
+            height={56}
+            className="w-20 h-20 sm:w-30 sm:h-30 filter brightness-0 invert opacity-90 hover:opacity-100 transition-opacity duration-300 object-contain"
+            priority
+          />
+          <div className="h-20 w-10 flex items-center justify-center">
+            <span className="text-white">|</span>
+          </div>
+          <Image
+            src="/Bazgym_logo_clear.png"
+            alt="PWP Anim Logo"
+            width={56}
+            height={56}
+            className="w-20 h-20 sm:w-30 sm:h-30 filter brightness-0 invert opacity-90 hover:opacity-100 transition-opacity duration-300 object-contain"
+            priority
+          />
+        </div>
+      </div>
       {!loadingRecent && recentSubmissions.length > 0 && (
         <FloatingPolaroidPairs submissions={recentSubmissions} />
       )}
@@ -175,7 +199,7 @@ export default function ViewPage() {
         className="text-center mb-8 relative z-10"
       >
         <h1 className="text-4xl sm:text-6xl md:text-8xl font-caveat font-bold text-neutral-100 mb-4 drop-shadow-2xl">
-          🔍 View Artwork
+          View Artwork
         </h1>
         <p className="font-permanent-marker text-neutral-300 text-xl tracking-wide drop-shadow-lg">
           Enter your queue number to view your creation

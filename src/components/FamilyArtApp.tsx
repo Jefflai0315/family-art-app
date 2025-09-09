@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import WelcomeScreen from "./WelcomeScreen";
 import CaptureScreen from "./CaptureScreen";
 import ProcessingScreen from "./ProcessingScreen";
@@ -627,6 +628,31 @@ const FamilyArtApp = () => {
   return (
     <main className="bg-black text-neutral-200 min-h-screen w-full flex flex-col items-center justify-center p-4 pb-24 relative">
       <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05]"></div>
+
+      {/* Logo - Top Center */}
+      <div className="absolute top-0 left-4 z-20">
+        <div className="relative flex items-center gap-4">
+          <Image
+            src="/favicon.png"
+            alt="PWP Anim Logo"
+            width={56}
+            height={56}
+            className="sm:w-30 sm:h-30 w-20 h-20 filter brightness-0 invert opacity-90 hover:opacity-100 transition-opacity duration-300 object-contain"
+            priority
+          />
+          <div className="sm:h-20 sm:w-10 h-5 w-2 flex items-center justify-center">
+            <span className="text-white">|</span>
+          </div>
+          <Image
+            src="/Bazgym_logo_clear.png"
+            alt="PWP Anim Logo"
+            width={56}
+            height={56}
+            className="sm:w-30 sm:h-30 w-20 h-20 filter brightness-0 invert opacity-90 hover:opacity-100 transition-opacity duration-300 object-contain"
+            priority
+          />
+        </div>
+      </div>
 
       {/* User Profile - Top Right */}
       <div className="absolute top-4 right-4 z-20">
