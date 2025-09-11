@@ -172,7 +172,6 @@ export default function ViewPage() {
             width={56}
             height={56}
             className="w-20 h-20 sm:w-30 sm:h-30 filter brightness-0 invert opacity-90 hover:opacity-100 transition-opacity duration-300 object-contain"
-            priority
           />
           <div className="h-20 w-10 flex items-center justify-center">
             <span className="text-white">|</span>
@@ -183,7 +182,6 @@ export default function ViewPage() {
             width={56}
             height={56}
             className="w-20 h-20 sm:w-30 sm:h-30 filter brightness-0 invert opacity-90 hover:opacity-100 transition-opacity duration-300 object-contain"
-            priority
           />
         </div>
       </div>

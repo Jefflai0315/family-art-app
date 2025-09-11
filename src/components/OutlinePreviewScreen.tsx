@@ -4,7 +4,7 @@ import React, { useRef } from "react";
 import { motion } from "framer-motion";
 import { Download, RefreshCw, ArrowLeft, CheckCircle } from "lucide-react";
 import PolaroidCard from "./PolaroidCard";
-import { downloadImage } from "@/lib/downloadUtils";
+import { downloadImage, addLogoOverlay } from "@/lib/downloadUtils";
 
 interface OutlinePreviewScreenProps {
   originalPhoto: string | null;
@@ -30,8 +30,10 @@ const OutlinePreviewScreen: React.FC<OutlinePreviewScreenProps> = ({
   const handleDownload = async (url: string, caption: string) => {
     try {
       if (caption === "Your Outline") {
+        // Add logo overlay to the outline before downloading
+        const imageWithLogo = await addLogoOverlay(url);
         await downloadImage(
-          url,
+          imageWithLogo,
           `coloring-outline-${queueNumber || "outline"}`
         );
       } else {
