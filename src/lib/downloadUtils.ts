@@ -39,8 +39,8 @@ export async function addLogoOverlay(
       logoImg.crossOrigin = "anonymous";
 
       logoImg.onload = () => {
-        // Calculate logo size (10% of image width, maintaining aspect ratio)
-        const logoSize = Math.min(img.width * 0.1, img.height * 0.1);
+        // Calculate logo size (20% of image width, maintaining aspect ratio)
+        const logoSize = Math.min(img.width * 0.2, img.height * 0.2);
         const logoAspectRatio = logoImg.width / logoImg.height;
         const logoWidth = logoSize;
         const logoHeight = logoSize / logoAspectRatio;
