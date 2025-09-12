@@ -5,6 +5,7 @@ import { videoPrompts } from "@/app/utils/constants";
 import { config } from "../../../lib/config";
 import { getServerSession } from "next-auth";
 import { getCreditManager } from "@/lib/credits";
+import { getModelConfig, getDefaultModel } from "@/lib/animationConfig";
 
 // Environment variables and client will be created when the function is called
 
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
     });
 
     const body = await request.json();
-    const { imageUrl, prompt, familyArtId } = body;
+    const { imageUrl, prompt, familyArtId, modelType } = body;
 
     if (!imageUrl || !familyArtId) {
       return NextResponse.json(
@@ -92,6 +93,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Get the animation model configuration
+    const animationModel = getModelConfig(modelType || getDefaultModel());
+    console.log(
+      `Using animation model: ${animationModel.displayName} (${animationModel.name})`
+    );
 
     // Check if user has enough credits
     const creditManager = await getCreditManager();
@@ -131,12 +138,12 @@ export async function POST(request: NextRequest) {
     // Create initial task in DB
     const now = new Date();
     const initialTask: AnimationTask = {
-      taskId: `wavespeedai_${Date.now()}`,
+      taskId: `${animationModel.name}_${Date.now()}`,
       status: "queuing",
       prompt,
-      model: "wavespeedai",
-      duration: 5,
-      resolution: "480P",
+      model: animationModel.name,
+      duration: animationModel.duration,
+      resolution: animationModel.resolution,
       familyArtId,
       createdAt: now,
       updatedAt: now,
@@ -144,18 +151,17 @@ export async function POST(request: NextRequest) {
     await animationTasksCollection.insertOne(initialTask);
     const taskId = initialTask.taskId;
 
-    // Prepare payload for WavespeedAI
-    const apiUrl =
-      "https://api.wavespeed.ai/api/v3/bytedance/seedance-v1-lite-i2v-480p";
+    // Prepare payload for WavespeedAI using selected model
+    const apiUrl = animationModel.apiUrl;
     const headers = {
       "Content-Type": "application/json",
       Authorization: `Bearer ${WAVESPEED_API_KEY}`,
     };
     const payload = {
-      duration: 5,
+      duration: animationModel.duration,
       image: imageUrl,
       prompt: prompt || videoPrompts[0],
-      seed: -1,
+      ...animationModel.payload,
     };
 
     // Call WavespeedAI

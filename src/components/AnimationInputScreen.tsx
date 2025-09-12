@@ -9,17 +9,21 @@ import {
   Crop,
   RotateCcw,
   RotateCw,
+  Zap,
+  Clock,
 } from "lucide-react";
 import ReactCrop, { Crop as CropType } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import PolaroidCard from "./PolaroidCard";
+import { getAllModels, type AnimationModelType } from "@/lib/animationConfig";
 
 interface AnimationInputScreenProps {
   onRetrieveAnimations: (queueNumber: string) => void;
   onGenerateAnimation: (
     queueNumber: string,
     imageData: string,
-    prompt?: string
+    prompt?: string,
+    modelType?: AnimationModelType
   ) => void;
   onBack: () => void;
 }
@@ -35,6 +39,8 @@ const AnimationInputScreen = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [showAdvancedPrompt, setShowAdvancedPrompt] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
+  const [selectedModel, setSelectedModel] =
+    useState<AnimationModelType>("HAILUO_FAST");
   const [isCropping, setIsCropping] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [cropPreset, setCropPreset] = useState<"4:3" | "1:1" | "16:9">("4:3");
@@ -212,11 +218,16 @@ const AnimationInputScreen = ({
 
     setIsGenerating(true);
     try {
+      // Use custom prompt if provided, otherwise use default
       const prompt =
-        showAdvancedPrompt && customPrompt.trim()
-          ? customPrompt.trim()
-          : "Bring this artwork to life with gentle animation and flowing colors";
-      onGenerateAnimation(queueNumber.trim(), croppedImage, prompt);
+        customPrompt.trim() ||
+        "Bring this artwork to life with gentle animation and flowing colors";
+      onGenerateAnimation(
+        queueNumber.trim(),
+        croppedImage,
+        prompt,
+        selectedModel
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -613,10 +624,70 @@ const AnimationInputScreen = ({
               </div>
             ) : (
               <div className="text-neutral-400 text-sm">
-                Using default prompt: &quot;Bring this artwork to life with
-                gentle animation and flowing colors&quot;
+                {customPrompt.trim() ? (
+                  <div>
+                    <span className="text-yellow-400">Custom prompt:</span>{" "}
+                    &quot;{customPrompt}&quot;
+                  </div>
+                ) : (
+                  <div>
+                    Using default prompt: &quot;Bring this artwork to life with
+                    gentle animation and flowing colors&quot;
+                  </div>
+                )}
               </div>
             )}
+          </div>
+        </motion.div>
+
+        {/* Animation Model Selection */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.1, duration: 0.6 }}
+          className="mb-8"
+        >
+          <div className="bg-neutral-800/50 backdrop-blur-sm rounded-lg p-6 border border-neutral-700">
+            <label className="block text-neutral-300 font-permanent-marker text-lg mb-4">
+              Animation Model
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Object.entries(getAllModels()).map(([key, model]) => (
+                <motion.button
+                  key={key}
+                  onClick={() => setSelectedModel(key as AnimationModelType)}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    selectedModel === key
+                      ? "border-yellow-400 bg-yellow-400/10"
+                      : "border-neutral-600 hover:border-neutral-500"
+                  }`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      {key === "HAILUO_FAST" ? (
+                        <Zap className="w-6 h-6 text-yellow-400" />
+                      ) : (
+                        <Clock className="w-6 h-6 text-blue-400" />
+                      )}
+                    </div>
+                    <div className="text-left">
+                      <h3 className="font-permanent-marker text-lg text-neutral-100 mb-1">
+                        {model.displayName}
+                      </h3>
+                      <p className="text-sm text-neutral-400 mb-2">
+                        {model.description}
+                      </p>
+                      <div className="flex space-x-4 text-xs text-neutral-500">
+                        <span>Duration: {model.duration}s</span>
+                        <span>Resolution: {model.resolution}</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
           </div>
         </motion.div>
 

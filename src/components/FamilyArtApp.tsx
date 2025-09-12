@@ -395,7 +395,9 @@ const FamilyArtApp = () => {
 
   const handleGenerateAnimation = async (
     queueNumber: string,
-    imageData: string
+    imageData: string,
+    prompt?: string,
+    modelType?: string
   ) => {
     console.log("Generating animation for queue:", queueNumber);
     setFamilyData((prev) => ({ ...prev, queueNumber }));
@@ -416,13 +418,16 @@ const FamilyArtApp = () => {
         body: JSON.stringify({
           imageUrl: imageData,
           prompt:
+            prompt ||
             "Bring this family artwork to life with gentle animation and flowing colors",
           familyArtId: queueNumber,
+          modelType: modelType,
         }),
       });
     });
 
     if (error) {
+      console.error("Error submitting animation:", error);
       handleApiError(error);
       setProcessing(false);
       return;
