@@ -5,7 +5,7 @@ export interface AnimationModelConfig {
   apiUrl: string;
   duration: number;
   resolution: string;
-  payload: Record<string, any>;
+  payload: Record<string, string | number | boolean>;
   description: string;
 }
 

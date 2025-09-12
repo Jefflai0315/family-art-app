@@ -40,7 +40,7 @@ const AnimationInputScreen = ({
   const [showAdvancedPrompt, setShowAdvancedPrompt] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
   const [selectedModel, setSelectedModel] =
-    useState<AnimationModelType>("HAILUO_FAST");
+    useState<AnimationModelType>("SEEDANCE");
   const [isCropping, setIsCropping] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [cropPreset, setCropPreset] = useState<"4:3" | "1:1" | "16:9">("4:3");
@@ -666,7 +666,7 @@ const AnimationInputScreen = ({
                 >
                   <div className="flex items-start space-x-3">
                     <div className="flex-shrink-0">
-                      {key === "HAILUO_FAST" ? (
+                      {key === "SEEDANCE" ? (
                         <Zap className="w-6 h-6 text-yellow-400" />
                       ) : (
                         <Clock className="w-6 h-6 text-blue-400" />
