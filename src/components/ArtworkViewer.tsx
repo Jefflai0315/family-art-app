@@ -41,12 +41,12 @@ const ArtworkViewer = ({
   const [currentAnimationIndex, setCurrentAnimationIndex] = useState(0);
 
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
-  const [isDesktop, setIsDesktop] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(true);
 
   const successfulAnimations = animations.filter(
     (anim) => anim.status === "success" && anim.cloudinaryVideoUrl
   );
-
+  // cancel this , because we can to ca
   // Detect desktop and generate QR code
   useEffect(() => {
     const checkIsDesktop = () => {
@@ -62,8 +62,6 @@ const ArtworkViewer = ({
   // Generate QR code for current content
   useEffect(() => {
     const generateQRCode = async () => {
-      if (!isDesktop) return;
-
       try {
         const currentUrl = getCurrentVideoUrl() || getCurrentImageUrl();
         if (currentUrl) {
@@ -83,13 +81,7 @@ const ArtworkViewer = ({
     };
 
     generateQRCode();
-  }, [
-    isDesktop,
-    currentView,
-    currentAnimationIndex,
-    submission,
-    successfulAnimations,
-  ]);
+  }, [currentView, currentAnimationIndex, submission, successfulAnimations]);
 
   const downloadVideo = async (url: string, filename: string) => {
     try {
@@ -371,13 +363,15 @@ const ArtworkViewer = ({
         ))}
       </div>
 
-      {/* Fixed QR Code at Bottom for Desktop */}
-      {isDesktop && qrCodeUrl && (
+      {/* QR Code - Fixed for Desktop, Relative for Mobile */}
+      {qrCodeUrl && (
         <motion.div
           initial={{ opacity: 0, y: 100 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8, duration: 0.6 }}
-          className="fixed bottom-4 right-0 transform -translate-x-1/2 z-50"
+          className={`${
+            isDesktop ? "fixed bottom-4 right-4" : "relative mt-6"
+          } z-50`}
         >
           <div className="bg-white p-3 rounded-lg shadow-2xl border-2 border-gray-200">
             <div className="flex items-center gap-2 mb-2">
