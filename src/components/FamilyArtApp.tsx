@@ -13,6 +13,7 @@ import ArtworkScanScreen from "./ArtworkScanScreen";
 import AnimationInputScreen from "./AnimationInputScreen";
 import AnimationGalleryScreen from "./AnimationGalleryScreen";
 import FinalResultScreen from "./FinalResultScreen";
+import RegenerateAnimationScreen from "./RegenerateAnimationScreen";
 import OutlineFailedScreen from "./OutlineFailedScreen";
 import AnimationFailedScreen from "./AnimationFailedScreen";
 import OutlinePreviewScreen from "./OutlinePreviewScreen";
@@ -84,6 +85,8 @@ const FamilyArtApp = () => {
   const [progress, setProgress] = useState(0);
   const [animations, setAnimations] = useState<Animation[]>([]);
   const [currentQueueNumber, setCurrentQueueNumber] = useState<string>("");
+  const [currentPrompt, setCurrentPrompt] = useState<string>("");
+  const [currentModel, setCurrentModel] = useState<string>("HAILUO_FAST");
 
   // Error handling
   const { errorState, isRetrying, clearError, retry, handleApiError } =
@@ -402,6 +405,15 @@ const FamilyArtApp = () => {
     console.log("Generating animation for queue:", queueNumber);
     setFamilyData((prev) => ({ ...prev, queueNumber }));
     setArtworkData(imageData);
+
+    // Store current prompt and model for regeneration
+    const finalPrompt =
+      prompt ||
+      "Bring this family artwork to life with gentle animation and flowing colors";
+    const finalModel = modelType || "HAILUO_FAST";
+    setCurrentPrompt(finalPrompt);
+    setCurrentModel(finalModel);
+
     clearError(); // Clear any previous errors
 
     // Show loading screen immediately
@@ -463,6 +475,29 @@ const FamilyArtApp = () => {
 
   const handleGoToGenerateNew = () => {
     setCurrentStep("animation-input");
+  };
+
+  const handleRegenerateAnimation = () => {
+    setCurrentStep("regenerate-animation");
+  };
+
+  const handleRegenerate = async (prompt: string, modelType: string) => {
+    if (!familyData.queueNumber || !artworkData) {
+      console.error("Missing queue number or artwork data for regeneration");
+      return;
+    }
+
+    // Update stored prompt and model
+    setCurrentPrompt(prompt);
+    setCurrentModel(modelType);
+
+    // Call the same generate animation function
+    await handleGenerateAnimation(
+      familyData.queueNumber,
+      artworkData,
+      prompt,
+      modelType
+    );
   };
 
   const handleRetry = async () => {
@@ -612,11 +647,23 @@ const FamilyArtApp = () => {
             onGenerateNew={handleGoToGenerateNew}
           />
         );
+      case "regenerate-animation":
+        return (
+          <RegenerateAnimationScreen
+            queueNumber={familyData.queueNumber || ""}
+            imageData={artworkData || ""}
+            currentPrompt={currentPrompt}
+            currentModel={currentModel}
+            onRegenerate={handleRegenerate}
+            onBack={() => setCurrentStep("final-result")}
+          />
+        );
       case "final-result":
         return (
           <FinalResultScreen
             onRestart={handleRestart}
             onCreateAnotherAnimation={handleGoToGenerateNew}
+            onRegenerateAnimation={handleRegenerateAnimation}
             animationUrl={familyData.animation}
           />
         );

@@ -8,12 +8,14 @@ import PolaroidCard from "./PolaroidCard";
 interface FinalResultScreenProps {
   onRestart: () => void;
   onCreateAnotherAnimation: () => void;
+  onRegenerateAnimation?: () => void;
   animationUrl?: string | null;
 }
 
 const FinalResultScreen = ({
   onRestart,
   onCreateAnotherAnimation,
+  onRegenerateAnimation,
   animationUrl,
 }: FinalResultScreenProps) => {
   console.log("FinalResultScreen received animationUrl:", animationUrl);
@@ -146,12 +148,18 @@ const FinalResultScreen = ({
           Save
         </button>
 
+        {onRegenerateAnimation && (
+          <button onClick={onRegenerateAnimation} className="secondary-button">
+            Regenerate Animation
+          </button>
+        )}
+
         <button onClick={onCreateAnotherAnimation} className="secondary-button">
           Create Another Animation
         </button>
 
         <button onClick={onRestart} className="secondary-button">
-          Create Another Masterpiece
+          Create Another Outline
         </button>
       </motion.div>
     </div>
