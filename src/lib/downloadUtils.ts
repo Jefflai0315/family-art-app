@@ -153,6 +153,92 @@ export async function downloadImage(
 }
 
 /**
+ * Auto-download an image with enhanced mobile compatibility
+ */
+export async function autoDownloadImage(
+  imageUrl: string,
+  baseFilename: string = "image"
+): Promise<void> {
+  const extension = getImageExtension(imageUrl);
+  const filename = `${baseFilename}.${extension}`;
+
+  try {
+    // Detect device type and browser
+    const isMobile =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isAndroid = /Android/.test(navigator.userAgent);
+    const isSafari =
+      /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+
+    if (isMobile) {
+      // Mobile-specific download handling
+      try {
+        if (isIOS && isSafari) {
+          // iOS Safari: Use a more compatible approach
+          const link = document.createElement("a");
+          link.href = imageUrl;
+          link.download = filename;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+
+          // Add to DOM temporarily
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } else if (isAndroid) {
+          // Android: Try standard download first
+          await downloadMedia(imageUrl, { filename, fallbackToNewTab: true });
+        } else {
+          // Other mobile browsers
+          await downloadMedia(imageUrl, { filename, fallbackToNewTab: true });
+        }
+      } catch (error) {
+        console.warn(
+          "Mobile download failed, trying alternative method:",
+          error
+        );
+
+        // Alternative method for mobile: create a temporary link with download attribute
+        try {
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          const blobUrl = window.URL.createObjectURL(blob);
+
+          const link = document.createElement("a");
+          link.href = blobUrl;
+          link.download = filename;
+          link.style.display = "none";
+
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          // Clean up
+          setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+        } catch (fallbackError) {
+          console.warn(
+            "Fallback download failed, opening in new tab:",
+            fallbackError
+          );
+          // Final fallback: open in new tab
+          window.open(imageUrl, "_blank");
+        }
+      }
+    } else {
+      // Desktop: use standard download
+      await downloadMedia(imageUrl, { filename, fallbackToNewTab: false });
+    }
+  } catch (error) {
+    console.error("Auto-download failed:", error);
+    // Final fallback: open in new tab
+    window.open(imageUrl, "_blank");
+  }
+}
+
+/**
  * Download a video with proper filename
  */
 export async function downloadVideo(

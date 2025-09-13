@@ -1,10 +1,14 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Download, RefreshCw, ArrowLeft, CheckCircle } from "lucide-react";
 import PolaroidCard from "./PolaroidCard";
-import { downloadImage, addLogoOverlay } from "@/lib/downloadUtils";
+import {
+  downloadImage,
+  addLogoOverlay,
+  autoDownloadImage,
+} from "@/lib/downloadUtils";
 
 interface OutlinePreviewScreenProps {
   originalPhoto: string | null;
@@ -26,6 +30,41 @@ const OutlinePreviewScreen: React.FC<OutlinePreviewScreenProps> = ({
   onBack,
 }) => {
   const dragAreaRef = useRef<HTMLDivElement>(null);
+  const [hasAutoDownloaded, setHasAutoDownloaded] = useState(false);
+  const [downloadStatus, setDownloadStatus] = useState<
+    "downloading" | "success" | "failed"
+  >("downloading");
+
+  // Auto-download the outline when the component loads
+  useEffect(() => {
+    const autoDownloadOutline = async () => {
+      if (generatedOutline && !hasAutoDownloaded) {
+        try {
+          setDownloadStatus("downloading");
+
+          // Add a small delay to ensure the component is fully rendered
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
+          // Add logo overlay and auto-download
+          const imageWithLogo = await addLogoOverlay(generatedOutline);
+          await autoDownloadImage(
+            imageWithLogo,
+            `coloring-outline-${queueNumber || "outline"}`
+          );
+
+          setHasAutoDownloaded(true);
+          setDownloadStatus("success");
+          console.log("Outline auto-downloaded successfully");
+        } catch (error) {
+          console.error("Auto-download failed:", error);
+          setDownloadStatus("failed");
+          // Don't set hasAutoDownloaded to true so user can try manual download
+        }
+      }
+    };
+
+    autoDownloadOutline();
+  }, [generatedOutline, hasAutoDownloaded, queueNumber]);
 
   const handleDownload = async (url: string, caption: string) => {
     try {
@@ -59,6 +98,44 @@ const OutlinePreviewScreen: React.FC<OutlinePreviewScreenProps> = ({
         <p className="font-permanent-marker text-neutral-300 text-xl tracking-wide">
           Your AI-generated coloring outline
         </p>
+
+        {/* Auto-download status indicator */}
+        {generatedOutline && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+            className="mt-4"
+          >
+            {downloadStatus === "success" ? (
+              <div className="inline-flex flex-col items-center px-4 py-2 bg-green-500/20 backdrop-blur-sm rounded-lg border border-green-400/50">
+                <div className="flex items-center">
+                  <CheckCircle className="w-5 h-5 text-green-400 mr-2" />
+                  <span className="text-green-300 font-permanent-marker text-sm">
+                    Outline downloaded to your device!
+                  </span>
+                </div>
+                <span className="text-green-200 text-xs mt-1">
+                  Check your Downloads folder or Photos app
+                </span>
+              </div>
+            ) : downloadStatus === "downloading" ? (
+              <div className="inline-flex items-center px-4 py-2 bg-blue-500/20 backdrop-blur-sm rounded-lg border border-blue-400/50">
+                <Download className="w-5 h-5 text-blue-400 mr-2 animate-pulse" />
+                <span className="text-blue-300 font-permanent-marker text-sm">
+                  Downloading outline...
+                </span>
+              </div>
+            ) : downloadStatus === "failed" ? (
+              <div className="inline-flex items-center px-4 py-2 bg-yellow-500/20 backdrop-blur-sm rounded-lg border border-yellow-400/50">
+                <Download className="w-5 h-5 text-yellow-400 mr-2" />
+                <span className="text-yellow-300 font-permanent-marker text-sm">
+                  Auto-download failed - use the Download button below
+                </span>
+              </div>
+            ) : null}
+          </motion.div>
+        )}
       </motion.div>
 
       {/* Queue Number Display */}
